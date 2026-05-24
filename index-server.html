@@ -1,0 +1,5233 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>程程宠物医院小红书 AI 工作台</title>
+  <style>
+    :root {
+      --bg: #f4f7f6;
+      --panel: #ffffff;
+      --ink: #17211f;
+      --muted: #65716d;
+      --line: #dfe8e4;
+      --green: #18835f;
+      --green-2: #2fa77c;
+      --mint: #e0f2eb;
+      --amber: #eaa43e;
+      --rose: #d94d63;
+      --blue: #5a86c8;
+      --shadow: 0 18px 60px rgba(17, 33, 29, .10);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(135deg, rgba(24, 131, 95, .13), transparent 31%),
+        linear-gradient(315deg, rgba(217, 77, 99, .08), transparent 30%),
+        var(--bg);
+    }
+
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 340px minmax(460px, 1fr) 390px;
+      gap: 18px;
+      padding: 18px;
+    }
+
+    .panel {
+      background: rgba(255, 255, 255, .91);
+      border: 1px solid rgba(223, 232, 228, .96);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+
+    .sidebar, .inspector {
+      height: calc(100vh - 36px);
+      overflow: auto;
+      padding: 18px;
+    }
+
+    .stage {
+      height: calc(100vh - 36px);
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      color: var(--green);
+      background: var(--mint);
+      border: 1px solid #bfe5d5;
+    }
+
+    .brand svg { width: 25px; height: 25px; }
+    .brand h1 { margin: 0; font-size: 18px; line-height: 1.2; }
+    .brand p { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
+
+    label {
+      display: block;
+      margin: 13px 0 7px;
+      color: #30413c;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+      color: var(--ink);
+      padding: 10px 11px;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 72px;
+      resize: vertical;
+      line-height: 1.52;
+    }
+
+    textarea.compact {
+      min-height: 58px;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: #85c0aa;
+      box-shadow: 0 0 0 3px rgba(24, 131, 95, .12);
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .color-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .color-field {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 8px;
+      align-items: center;
+    }
+
+    input[type="color"] {
+      height: 40px;
+      padding: 3px;
+      border-radius: 7px;
+    }
+
+    .logo-field {
+      display: grid;
+      grid-template-columns: 54px 1fr;
+      gap: 10px;
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    .logo-preview {
+      width: 54px;
+      height: 54px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #f8faf9;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      color: var(--green);
+      font-weight: 900;
+      font-size: 12px;
+    }
+
+    .logo-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      padding: 4px;
+    }
+
+    input[type="file"] {
+      padding: 8px;
+      font-size: 12px;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8faf9;
+    }
+
+    .segment {
+      border: 0;
+      border-radius: 6px;
+      padding: 9px 6px;
+      color: var(--muted);
+      background: transparent;
+      font-size: 13px;
+    }
+
+    .segment.active {
+      background: #fff;
+      color: var(--green);
+      box-shadow: 0 6px 18px rgba(32, 58, 49, .10);
+      font-weight: 900;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .grid.two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .primary, .ghost, .danger, .mini-action {
+      border: 0;
+      border-radius: 7px;
+      padding: 11px 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .primary {
+      width: 100%;
+      margin-top: 15px;
+      color: #fff;
+      background: #137a58;
+      box-shadow: 0 12px 26px rgba(19, 122, 88, .24);
+    }
+
+    .primary:disabled, .ghost:disabled, .danger:disabled, .mini-action:disabled {
+      cursor: wait;
+      opacity: .72;
+    }
+
+    .primary.loading svg {
+      animation: spin 1.1s linear infinite;
+    }
+
+    .ghost {
+      color: #176f52;
+      background: #eef7f3;
+      border: 1px solid #cfe9df;
+    }
+
+    .danger {
+      color: #a43246;
+      background: #fff0f2;
+      border: 1px solid #f2ccd2;
+    }
+
+    .mini-action {
+      padding: 8px 10px;
+      color: #176f52;
+      background: #f3faf7;
+      border: 1px solid #d5ebe2;
+      font-size: 12px;
+    }
+
+    .primary svg, .ghost svg, .danger svg, .mini-action svg {
+      width: 17px;
+      height: 17px;
+      flex: 0 0 auto;
+    }
+
+    .hint, .ai-panel {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      margin-top: 14px;
+      padding: 12px;
+      border: 1px solid #e9efec;
+      background: #fbfdfc;
+      border-radius: 7px;
+    }
+
+    .ai-panel strong {
+      display: block;
+      color: #2d413a;
+      margin-bottom: 4px;
+    }
+
+    .section-label {
+      margin: 17px 0 8px;
+      color: #1f332e;
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .topic-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 14px 0 7px;
+    }
+
+    .topic-head label {
+      margin: 0;
+    }
+
+    .topic-status {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .quick-topics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-top: 8px;
+    }
+
+    .topic-chip {
+      min-height: 36px;
+      border: 1px solid #dce8e3;
+      border-radius: 7px;
+      background: #fff;
+      color: #355049;
+      padding: 8px 9px;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 750;
+      line-height: 1.3;
+    }
+
+    .topic-chip:hover {
+      border-color: #93cbb6;
+      color: var(--green);
+      background: #f6fbf9;
+    }
+
+    .topic-chip small {
+      display: block;
+      margin-top: 5px;
+      color: #71827c;
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .toolbar h2 { margin: 0; font-size: 16px; }
+    .toolbar small { display: block; margin-top: 3px; color: var(--muted); }
+
+    .icon-buttons { display: flex; gap: 8px; }
+
+    .icon-button {
+      width: 38px;
+      height: 38px;
+      border-radius: 7px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: #30403b;
+      display: grid;
+      place-items: center;
+    }
+
+    .icon-button svg { width: 18px; height: 18px; }
+
+    .pipeline {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(250, 252, 251, .82);
+    }
+
+    .pipe-step {
+      border: 1px solid #e2ebe7;
+      background: #fff;
+      border-radius: 8px;
+      padding: 10px;
+      min-width: 0;
+    }
+
+    .pipe-step b {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .pipe-step span {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .pipe-step.active {
+      border-color: #9ed3bf;
+      box-shadow: 0 0 0 3px rgba(24, 131, 95, .08);
+    }
+
+    .pipe-step.done span { color: #137a58; font-weight: 800; }
+
+    .pipe-step.warn {
+      border-color: #eed59a;
+      background: #fffaf0;
+    }
+
+    .pipe-step.warn span {
+      color: #a26b00;
+      font-weight: 850;
+    }
+
+    .pipe-step.fail {
+      border-color: #f3b3b3;
+      background: #fff6f5;
+    }
+
+    .pipe-step.fail span {
+      color: #b23b3b;
+      font-weight: 850;
+    }
+
+    .run-status {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid #d8e8e1;
+      background: #f3faf7;
+      color: #243b34;
+    }
+
+    .run-status[hidden] { display: none; }
+
+    .run-spinner {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 3px solid rgba(19, 122, 88, .18);
+      border-top-color: #137a58;
+      animation: spin .9s linear infinite;
+    }
+
+    .run-status b {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 13px;
+    }
+
+    .run-status span:not(.run-spinner) {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .run-status small {
+      color: #137a58;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .workspace {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(230px, 1fr) minmax(210px, 250px);
+      gap: 16px;
+      padding: 16px;
+    }
+
+    .preview-wrap {
+      min-height: 0;
+      overflow: auto;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding-bottom: 24px;
+    }
+
+    .phone {
+      width: min(100%, 318px);
+      aspect-ratio: 3 / 4;
+      background: #fff;
+      border: 10px solid #17211f;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 24px 70px rgba(15, 26, 23, .24);
+    }
+
+    .card {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      padding: 12px 15px 13px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      color: var(--card-ink);
+      background: var(--card-bg);
+    }
+
+    .card.doctor {
+      --card-bg: #f8fffb;
+      --card-ink: #15352c;
+      --accent: #2e9a74;
+      --accent2: #72b7df;
+      --soft: #e0f3ea;
+      --radius-ui: 8px;
+    }
+
+    .card.warm {
+      --card-bg: #fff8eb;
+      --card-ink: #352615;
+      --accent: #df8f29;
+      --accent2: #e76d7c;
+      --soft: #f9e6bd;
+      --radius-ui: 12px;
+    }
+
+    .card.alert {
+      --card-bg: #fffaf8;
+      --card-ink: #321d1d;
+      --accent: #d9485f;
+      --accent2: #e8a13a;
+      --soft: #ffe4df;
+      --radius-ui: 8px;
+    }
+
+    .card.report {
+      --card-bg: #f7fbff;
+      --card-ink: #16283a;
+      --accent: #4477b9;
+      --accent2: #64b6ac;
+      --soft: #deebff;
+      --radius-ui: 5px;
+    }
+
+    .card.cute {
+      --card-bg: #fffdf3;
+      --card-ink: #2f2a18;
+      --accent: #ef8f45;
+      --accent2: #eb6f96;
+      --soft: #ffe8a8;
+      --radius-ui: 14px;
+    }
+
+    .card.premium {
+      --card-bg: #fbfcfb;
+      --card-ink: #151d1b;
+      --accent: #1f5f4e;
+      --accent2: #b89d62;
+      --soft: #eef3f0;
+      --radius-ui: 4px;
+    }
+
+    .card.branded {
+      --card-bg: var(--brand-bg);
+      --card-ink: var(--brand-ink);
+      --accent: var(--brand-primary);
+      --accent2: var(--brand-secondary);
+      --soft: var(--brand-soft);
+      --radius-ui: var(--brand-radius);
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      width: 260px;
+      height: 260px;
+      right: -122px;
+      top: -92px;
+      border-radius: 50%;
+      background: var(--soft);
+      opacity: .9;
+    }
+
+    .card::after {
+      content: "";
+      position: absolute;
+      width: 190px;
+      height: 190px;
+      left: -60px;
+      bottom: -75px;
+      border-radius: 50%;
+      background: color-mix(in srgb, var(--accent2) 23%, transparent);
+    }
+
+    .card > * { position: relative; z-index: 1; }
+
+    .card.generated-page {
+      padding: 0;
+      background: #fff;
+    }
+
+    .card.generated-page::before,
+    .card.generated-page::after {
+      display: none;
+    }
+
+    .generated-card-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .card.warm::before {
+      right: -95px;
+      top: -70px;
+      width: 235px;
+      height: 235px;
+      opacity: .78;
+    }
+
+    .card.alert::before {
+      right: -80px;
+      top: -110px;
+      width: 310px;
+      height: 310px;
+      opacity: .9;
+    }
+
+    .card.report::before {
+      width: 100%;
+      height: 118px;
+      left: 0;
+      right: auto;
+      top: 0;
+      border-radius: 0;
+      opacity: .72;
+    }
+
+    .card.report::after {
+      left: auto;
+      right: 24px;
+      bottom: 24px;
+      width: 90px;
+      height: 90px;
+      border-radius: 0;
+      opacity: .45;
+    }
+
+    .card.cute::before {
+      right: -60px;
+      top: -58px;
+      width: 210px;
+      height: 210px;
+    }
+
+    .card.cute::after {
+      left: -40px;
+      bottom: -45px;
+      width: 160px;
+      height: 160px;
+    }
+
+    .card.premium::before {
+      width: 100%;
+      height: 3px;
+      left: 0;
+      top: 0;
+      border-radius: 0;
+      opacity: 1;
+    }
+
+    .card.premium::after {
+      display: none;
+    }
+
+    .topline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+      color: color-mix(in srgb, var(--card-ink) 64%, transparent);
+      font-size: 9px;
+      font-weight: 850;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      max-width: 62%;
+      border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+      background: rgba(255, 255, 255, .64);
+      border-radius: 999px;
+      padding: 5px 8px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .card.alert .chip {
+      background: color-mix(in srgb, var(--accent) 12%, white);
+      border-color: color-mix(in srgb, var(--accent) 42%, transparent);
+    }
+
+    .card.report .chip {
+      border-radius: 4px;
+      background: rgba(255, 255, 255, .78);
+    }
+
+    .card.premium .chip {
+      border-radius: 3px;
+      background: transparent;
+    }
+
+    .pet-icon {
+      width: 30px;
+      height: 30px;
+      margin-bottom: 5px;
+      border-radius: 14px;
+      background: #fff;
+      border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
+      color: var(--accent);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 12px 28px rgba(25, 45, 38, .10);
+    }
+
+    .card.report .pet-icon {
+      border-radius: 5px;
+      box-shadow: none;
+    }
+
+    .card.cute .pet-icon {
+      transform: rotate(-3deg);
+    }
+
+    .card.premium .pet-icon {
+      border-radius: 4px;
+      box-shadow: none;
+    }
+
+    .pet-icon svg { width: 29px; height: 29px; }
+    .pet-icon svg { width: 20px; height: 20px; }
+
+    .pet-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      padding: 6px;
+    }
+
+    .card h3 {
+      margin: 0;
+      max-width: 95%;
+      font-size: 21px;
+      line-height: 1.03;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 7px 0 0;
+      color: color-mix(in srgb, var(--card-ink) 76%, transparent);
+      font-size: 10px;
+      line-height: 1.3;
+      font-weight: 700;
+    }
+
+    .bullets {
+      display: grid;
+      gap: 4px;
+      margin-top: 7px;
+    }
+
+    .bullet {
+      display: grid;
+      grid-template-columns: 19px 1fr;
+      gap: 7px;
+      align-items: start;
+      padding: 5px 7px;
+      border-radius: var(--radius-ui);
+      background: rgba(255, 255, 255, .68);
+      border: 1px solid color-mix(in srgb, var(--accent) 16%, transparent);
+      box-shadow: 0 8px 22px rgba(30, 45, 40, .06);
+    }
+
+    .card.alert .bullet {
+      border-left: 5px solid var(--accent);
+      background: rgba(255, 255, 255, .8);
+    }
+
+    .card.report .bullet {
+      box-shadow: none;
+      border-style: solid;
+      border-radius: 5px;
+      background: rgba(255, 255, 255, .84);
+    }
+
+    .card.cute .bullet {
+      transform: rotate(-.25deg);
+      background: rgba(255, 255, 255, .78);
+    }
+
+    .card.premium .bullet {
+      box-shadow: none;
+      background: rgba(255, 255, 255, .54);
+      border-left: 3px solid var(--accent);
+    }
+
+    .bullet b {
+      width: 19px;
+      height: 19px;
+      border-radius: calc(var(--radius-ui) - 2px);
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: var(--accent);
+      font-size: 9px;
+    }
+
+    .bullet span {
+      line-height: 1.36;
+      font-weight: 800;
+      font-size: 9px;
+    }
+
+    .doctor-note {
+      min-width: 0;
+      padding: 7px 9px;
+      border-radius: var(--radius-ui);
+      background: color-mix(in srgb, var(--accent) 10%, white);
+      border: 1px solid color-mix(in srgb, var(--accent) 20%, white);
+      color: color-mix(in srgb, var(--card-ink) 74%, transparent);
+      font-size: 8.5px;
+      line-height: 1.34;
+    }
+
+    .card-footer {
+      position: relative;
+      z-index: 3;
+      flex: 0 0 auto;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    .layout-shell {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      flex: 1 1 auto;
+      overflow: hidden;
+    }
+
+    .layout-kicker {
+      display: inline-flex;
+      align-self: flex-start;
+      margin: 6px 0 7px;
+      padding: 5px 8px;
+      border-radius: 999px;
+      color: #fff;
+      background: var(--accent);
+      font-size: 9px;
+      font-weight: 900;
+    }
+
+    .cover-title {
+      font-size: 25px !important;
+      line-height: 1.02 !important;
+      max-width: 100% !important;
+    }
+
+    .cover-slab {
+      margin: 8px 0 7px;
+      padding: 8px;
+      border-radius: var(--radius-ui);
+      background: rgba(255, 255, 255, .72);
+      border: 1px solid color-mix(in srgb, var(--accent) 16%, white);
+    }
+
+    .cover-slab strong {
+      display: block;
+      color: var(--accent);
+      font-size: 17px;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .cover-slab span {
+      display: block;
+      color: color-mix(in srgb, var(--card-ink) 75%, transparent);
+      font-size: 8px;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .signal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      margin-top: 7px;
+    }
+
+    .signal {
+      min-height: 36px;
+      padding: 6px;
+      border-radius: var(--radius-ui);
+      background: rgba(255, 255, 255, .72);
+      border: 1px solid color-mix(in srgb, var(--accent) 14%, white);
+      font-size: 7.5px;
+      line-height: 1.32;
+      font-weight: 850;
+    }
+
+    .signal b {
+      display: block;
+      margin-bottom: 2px;
+      color: var(--accent);
+      font-size: 10px;
+    }
+
+    .danger-panel {
+      margin-top: 9px;
+      padding: 10px;
+      border-radius: var(--radius-ui);
+      background: color-mix(in srgb, var(--accent) 12%, white);
+      border: 1px solid color-mix(in srgb, var(--accent) 35%, white);
+    }
+
+    .danger-panel .bullet {
+      margin-top: 5px;
+      background: rgba(255, 255, 255, .84);
+      border-left: 5px solid var(--accent);
+    }
+
+    .clinic-tip {
+      margin-top: 8px;
+      padding: 10px;
+      border-radius: var(--radius-ui);
+      background: rgba(255, 255, 255, .74);
+      border: 1px solid color-mix(in srgb, var(--accent2) 24%, white);
+    }
+
+    .clinic-tip strong {
+      color: var(--accent);
+      font-size: 11px;
+    }
+
+    .clinic-tip p {
+      margin: 5px 0 0;
+      color: color-mix(in srgb, var(--card-ink) 78%, transparent);
+      font-size: 9px;
+      line-height: 1.36;
+      font-weight: 760;
+    }
+
+    .report-grid-mini {
+      display: grid;
+      gap: 5px;
+      margin-top: 9px;
+    }
+
+    .report-row {
+      display: grid;
+      grid-template-columns: 62px 1fr;
+      gap: 8px;
+      align-items: center;
+      padding: 7px 8px;
+      border-radius: 5px;
+      background: rgba(255, 255, 255, .78);
+      border: 1px solid color-mix(in srgb, var(--accent) 16%, white);
+    }
+
+    .report-row b {
+      color: var(--accent);
+      font-size: 9px;
+    }
+
+    .report-row span {
+      color: color-mix(in srgb, var(--card-ink) 84%, transparent);
+      font-size: 9px;
+      line-height: 1.28;
+      font-weight: 800;
+    }
+
+    .timeline-list {
+      display: grid;
+      gap: 6px;
+      margin-top: 9px;
+    }
+
+    .time-step {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 7px;
+      align-items: start;
+    }
+
+    .time-step b {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-ui);
+      color: #fff;
+      background: var(--accent);
+      font-size: 10px;
+    }
+
+    .time-step span {
+      padding: 7px 8px;
+      border-radius: var(--radius-ui);
+      background: rgba(255, 255, 255, .72);
+      border: 1px solid color-mix(in srgb, var(--accent) 14%, white);
+      font-size: 9px;
+      line-height: 1.32;
+      font-weight: 800;
+    }
+
+    .formula-card {
+      margin-top: 10px;
+      padding: 12px;
+      border-radius: var(--radius-ui);
+      color: #fff;
+      background: var(--accent);
+      box-shadow: 0 14px 30px color-mix(in srgb, var(--accent) 22%, transparent);
+    }
+
+    .formula-card b {
+      display: block;
+      font-size: 18px;
+      line-height: 1.12;
+      margin-bottom: 6px;
+    }
+
+    .formula-card span {
+      display: block;
+      font-size: 9px;
+      line-height: 1.38;
+      font-weight: 800;
+      opacity: .95;
+    }
+
+    .page-num {
+      position: static;
+      color: color-mix(in srgb, var(--card-ink) 45%, transparent);
+      font-size: 12px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .thumbs {
+      min-width: 0;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-right: 4px;
+    }
+
+    .thumb {
+      width: 100%;
+      text-align: left;
+      color: var(--ink);
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .thumb.active {
+      border-color: #54aa88;
+      box-shadow: 0 0 0 3px rgba(47, 143, 109, .12);
+      background: #f7fcfa;
+    }
+
+    .thumb-main {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      text-align: left;
+      padding: 10px;
+    }
+
+    .outline-row {
+      display: grid;
+      grid-template-columns: 34px 1fr auto;
+      gap: 9px;
+      align-items: start;
+    }
+
+    .outline-page {
+      width: 34px;
+      height: 34px;
+      border-radius: 7px;
+      display: grid;
+      place-items: center;
+      background: #edf7f2;
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .outline-main {
+      min-width: 0;
+    }
+
+    .outline-main strong {
+      display: block;
+      font-size: 13px;
+      line-height: 1.32;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 150px;
+    }
+
+    .outline-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 6px;
+      flex-wrap: wrap;
+    }
+
+    .outline-pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 3px 7px;
+      color: #557069;
+      background: #f2f6f4;
+      border: 1px solid #e3ebe7;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .outline-pill.high {
+      color: #a43246;
+      background: #fff0f2;
+      border-color: #f2ccd2;
+    }
+
+    .outline-pill.medium {
+      color: #9a6a16;
+      background: #fff8e8;
+      border-color: #f3dfb2;
+    }
+
+    .outline-main span {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .outline-action {
+      color: var(--green);
+      font-size: 11px;
+      font-weight: 900;
+      opacity: .72;
+    }
+
+    .outline-action.failed { color: #c44458; opacity: 1; }
+    .outline-action.pending { color: #a26b00; opacity: 1; }
+    .outline-action.done { color: #137a58; opacity: 1; }
+
+    .thumb-retry {
+      width: calc(100% - 20px);
+      margin: 0 10px 10px;
+      min-height: 32px;
+      border: 1px solid #b9ddcf;
+      border-radius: 7px;
+      background: #eef8f4;
+      color: #137a58;
+      font-weight: 900;
+      font-size: 12px;
+    }
+
+    .thumb-retry.failed {
+      border-color: #f0bcc5;
+      background: #fff2f4;
+      color: #b73b55;
+    }
+
+    .thumb-retry.pending {
+      border-color: #eed59a;
+      background: #fffaf0;
+      color: #9a6908;
+    }
+
+    .inspector h2 {
+      margin: 0 0 12px;
+      font-size: 17px;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      margin-bottom: 13px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8faf9;
+    }
+
+    .tab {
+      border: 0;
+      border-radius: 6px;
+      padding: 8px 4px;
+      color: var(--muted);
+      background: transparent;
+      font-size: 13px;
+    }
+
+    .tab.active {
+      color: var(--green);
+      background: #fff;
+      font-weight: 900;
+      box-shadow: 0 6px 18px rgba(32, 58, 49, .10);
+    }
+
+    .tab-panel[hidden] { display: none; }
+
+    .meta-box {
+      margin-bottom: 12px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .meta-box h3 {
+      margin: 0 0 8px;
+      color: #30413c;
+      font-size: 13px;
+    }
+
+    .meta-box p {
+      margin: 0;
+      color: var(--muted);
+      white-space: pre-line;
+      line-height: 1.58;
+      font-size: 13px;
+    }
+
+    .code-preview {
+      max-height: 250px;
+      overflow: auto;
+      margin: 0;
+      padding: 12px;
+      border: 1px solid #e1ebe6;
+      border-radius: 8px;
+      background: #f8fbfa;
+      color: #263a35;
+      font-size: 11px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .visual-plan {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .visual-plan-card {
+      border: 1px solid #e2ebe7;
+      border-radius: 8px;
+      background: #fbfdfc;
+      padding: 10px;
+    }
+
+    .visual-plan-card b {
+      display: block;
+      color: #30413c;
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+
+    .visual-plan-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .visual-plan-card.empty {
+      border-style: dashed;
+      background: #f8fbfa;
+    }
+
+    .visual-swatches {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .visual-swatch {
+      width: 24px;
+      height: 24px;
+      border: 1px solid rgba(23, 33, 31, .12);
+      border-radius: 6px;
+    }
+
+    .visual-reference-image {
+      width: 100%;
+      margin-top: 9px;
+      border: 1px solid #e2ebe7;
+      border-radius: 8px;
+      background: #fff;
+      aspect-ratio: 3 / 4;
+      object-fit: cover;
+    }
+
+    .tags, .audit-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .publish-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .publish-item {
+      border: 1px solid #e2ebe7;
+      border-radius: 8px;
+      background: #fbfdfc;
+      padding: 10px;
+    }
+
+    .publish-item b {
+      display: block;
+      font-size: 12px;
+      color: #30413c;
+      margin-bottom: 4px;
+    }
+
+    .publish-item span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .quality-list, .draft-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .quality-item {
+      border: 1px solid #e2ebe7;
+      border-radius: 8px;
+      background: #fbfdfc;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 8px;
+      align-items: start;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .quality-item b {
+      color: #30413c;
+    }
+
+    .quality-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .quality-dot.pass {
+      color: #176f52;
+      background: #edf8f3;
+    }
+
+    .quality-dot.warn {
+      color: #9a6a16;
+      background: #fff8e8;
+    }
+
+    .quality-dot.risk {
+      color: #a43246;
+      background: #fff0f2;
+    }
+
+    .review-summary {
+      display: grid;
+      gap: 8px;
+    }
+
+    .review-summary-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .review-badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 5px 9px;
+      color: #9a6a16;
+      background: #fff8e8;
+      border: 1px solid #f3dfb2;
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .review-badge.empty {
+      color: var(--muted);
+      background: #f5f8f6;
+      border-color: #e2ebe7;
+    }
+
+    .review-badge.approved {
+      color: #176f52;
+      background: #edf8f3;
+      border-color: #d1ebe0;
+    }
+
+    .review-badge.changes {
+      color: #a43246;
+      background: #fff0f2;
+      border-color: #f2ccd2;
+    }
+
+    .review-reviewer {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .review-link {
+      padding: 10px;
+      border: 1px dashed #cfe0d9;
+      border-radius: 8px;
+      background: #f8fbfa;
+      word-break: break-all;
+    }
+
+    .review-feedback {
+      color: #30413c !important;
+    }
+
+    .full-button {
+      width: 100%;
+    }
+
+    .draft-item {
+      border: 1px solid #e2ebe7;
+      border-radius: 8px;
+      background: #fff;
+      padding: 10px;
+    }
+
+    .draft-item strong {
+      display: block;
+      font-size: 13px;
+      line-height: 1.35;
+      margin-bottom: 5px;
+    }
+
+    .draft-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .tag, .audit {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border-radius: 999px;
+      padding: 6px 9px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .tag {
+      color: #2a7459;
+      background: #f0f6f3;
+      border: 1px solid #d7ebe2;
+    }
+
+    .audit.pass {
+      color: #176f52;
+      background: #edf8f3;
+      border: 1px solid #d1ebe0;
+    }
+
+    .audit.warn {
+      color: #9a6a16;
+      background: #fff8e8;
+      border: 1px solid #f3dfb2;
+    }
+
+    .audit.risk {
+      color: #a43246;
+      background: #fff0f2;
+      border: 1px solid #f2ccd2;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 22px;
+      z-index: 10;
+      transform: translateX(-50%) translateY(16px);
+      opacity: 0;
+      pointer-events: none;
+      transition: .2s ease;
+      color: #fff;
+      background: #17211f;
+      padding: 10px 14px;
+      border-radius: 7px;
+      box-shadow: var(--shadow);
+      font-size: 13px;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .review-app {
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .review-shell {
+      max-width: 1180px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, .94);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .review-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 20px 22px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .review-header h1 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .review-header p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .review-status {
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: #fff8e8;
+      border: 1px solid #f3dfb2;
+      color: #9a6a16;
+      font-weight: 900;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .review-status.approved {
+      color: #176f52;
+      background: #edf8f3;
+      border-color: #d1ebe0;
+    }
+
+    .review-status.changes {
+      color: #a43246;
+      background: #fff0f2;
+      border-color: #f2ccd2;
+    }
+
+    .review-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 330px;
+      gap: 18px;
+      padding: 18px;
+    }
+
+    .review-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 14px;
+      align-content: start;
+    }
+
+    .review-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 12px;
+    }
+
+    .review-card img {
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      object-fit: contain;
+      border-radius: 7px;
+      background: #f7faf8;
+      border: 1px solid #edf2ef;
+    }
+
+    .review-card h3 {
+      margin: 10px 0 6px;
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    .review-card textarea {
+      min-height: 82px;
+      font-size: 13px;
+    }
+
+    .review-panel {
+      position: sticky;
+      top: 18px;
+      align-self: start;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 16px;
+    }
+
+    .review-panel h2 {
+      margin: 0 0 12px;
+      font-size: 17px;
+    }
+
+    @media (max-width: 1220px) {
+      .app { grid-template-columns: 330px 1fr; }
+      .inspector { grid-column: 1 / -1; height: auto; }
+      .review-grid { grid-template-columns: 1fr; }
+      .review-panel { position: static; }
+    }
+
+    @media (max-width: 860px) {
+      .app { grid-template-columns: 1fr; padding: 12px; }
+      .sidebar, .stage, .inspector { height: auto; }
+      .workspace { grid-template-columns: 1fr; }
+      .pipeline { grid-template-columns: repeat(2, 1fr); }
+      .phone { width: min(100%, 360px); }
+    }
+  </style>
+</head>
+<body>
+  <main class="review-app" id="reviewApp" hidden>
+    <section class="review-shell">
+      <div class="review-header">
+        <div>
+          <h1 id="reviewTitle">医生审核</h1>
+          <p id="reviewMeta">图文笔记审核链接</p>
+        </div>
+        <div class="review-status" id="reviewStatus">待审核</div>
+      </div>
+      <div class="review-grid">
+        <div class="review-cards" id="reviewCards"></div>
+        <aside class="review-panel">
+          <h2>审核意见</h2>
+          <label for="reviewerName">审核医生</label>
+          <input id="reviewerName" placeholder="请输入姓名">
+          <label for="reviewOverall">整篇意见</label>
+          <textarea id="reviewOverall" placeholder="例如：第 2 页建议补充就医提醒；整体可发布。"></textarea>
+          <div class="button-row">
+            <button class="danger" id="reviewNeedsChanges" type="button">需修改</button>
+            <button class="primary" id="reviewApprove" type="button">审核通过</button>
+          </div>
+          <div class="hint">
+            医生审核页不需要账号。当前为本地原型，审核记录保存在浏览器中；正式版会保存到后端并记录审核人、时间和版本。
+          </div>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <main class="app" id="app">
+    <section class="panel sidebar" aria-label="生成设置">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 14s1.5-2 4-2 4 2 4 2"></path>
+            <path d="M9 9h.01"></path>
+            <path d="M15 9h.01"></path>
+            <path d="M12 3c3.6 0 6.5 2.8 6.5 6.4 0 5-4.8 8.6-6.5 10.6-1.7-2-6.5-5.6-6.5-10.6C5.5 5.8 8.4 3 12 3Z"></path>
+          </svg>
+        </div>
+        <div>
+          <h1>程程宠物医院 AI 工作台</h1>
+          <p>结构化生成 · 合规审查 · 品牌导出</p>
+        </div>
+      </div>
+
+      <div class="section-label">医院画像</div>
+      <label for="hospitalPositioning">医院定位/擅长方向</label>
+      <textarea class="compact" id="hospitalPositioning">社区型综合宠物医院，重视猫病、皮肤耳道、体检预防和新手宠主教育。</textarea>
+
+      <label for="serviceFocus">特色服务/重点项目</label>
+      <textarea class="compact" id="serviceFocus">猫科诊疗、皮肤耳道、疫苗驱虫、体检、绝育、口腔洁牙。</textarea>
+
+      <label for="localAudience">所在区域与客群</label>
+      <textarea class="compact" id="localAudience">周边年轻养猫家庭、新手宠主和多宠家庭较多，偏好清楚直接、可收藏的养宠指南。</textarea>
+
+      <label for="contentStyleGuide">内容风格要求</label>
+      <textarea class="compact" id="contentStyleGuide">专业但说人话，不制造焦虑；多用判断清单、就医边界和到院准备，少用营销话术。</textarea>
+
+      <label for="topic">今日选题</label>
+      <textarea id="topic">猫咪呕吐，宠主应该怎么判断要不要去医院？</textarea>
+
+      <div class="topic-head">
+        <label>AI 推荐选题</label>
+        <button class="mini-action" id="refreshTopics" type="button">AI刷新</button>
+      </div>
+      <div class="quick-topics" id="quickTopics"></div>
+      <p class="topic-status" id="topicStatus">根据医院画像、服务重点和内容目标生成。</p>
+
+      <div class="row">
+        <div>
+          <label for="pet">宠物类型</label>
+          <select id="pet">
+            <option>猫</option>
+            <option>狗</option>
+            <option>猫狗通用</option>
+          </select>
+        </div>
+        <div>
+          <label for="contentType">内容类型</label>
+          <select id="contentType">
+            <option>症状判断</option>
+            <option>日常护理</option>
+            <option>预防科普</option>
+            <option>急救提醒</option>
+            <option>检查项目解释</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="audience">目标宠主</label>
+          <select id="audience">
+            <option>新手宠主</option>
+            <option>幼宠家庭</option>
+            <option>老年宠家庭</option>
+            <option>多宠家庭</option>
+          </select>
+        </div>
+        <div>
+          <label for="cta">转化目标</label>
+          <select id="cta">
+            <option>预约检查</option>
+            <option>私信咨询</option>
+            <option>收藏备用</option>
+            <option>到院评估</option>
+          </select>
+        </div>
+      </div>
+
+      <label>内容场景风格</label>
+      <div class="segmented" role="tablist" aria-label="内容场景风格">
+        <button class="segment active" data-style="doctor" type="button">医生科普</button>
+        <button class="segment" data-style="warm" type="button">温柔养护</button>
+        <button class="segment" data-style="alert" type="button">急救提醒</button>
+        <button class="segment" data-style="report" type="button">检查报告</button>
+        <button class="segment" data-style="cute" type="button">可爱专业</button>
+        <button class="segment" data-style="premium" type="button">高端简洁</button>
+      </div>
+
+      <label for="hospital">医院名称</label>
+      <input id="hospital" value="程程宠物医院">
+
+      <div class="row">
+        <div>
+          <label for="doctor">医生署名</label>
+          <input id="doctor" value="程医生">
+        </div>
+        <div>
+          <label for="phone">联系电话</label>
+          <input id="phone" value="021-8888 6666">
+        </div>
+      </div>
+
+      <label for="address">门店地址</label>
+      <input id="address" value="上海市宠主友好街 88 号">
+
+      <label for="logoUpload">医院 Logo</label>
+      <div class="logo-field">
+        <div class="logo-preview" id="logoPreview">LOGO</div>
+        <input id="logoUpload" type="file" accept="image/*">
+      </div>
+
+      <div class="color-row">
+        <div>
+          <label for="primaryColor">品牌主色</label>
+          <div class="color-field">
+            <input id="primaryColor" type="color" value="#18835f">
+            <input id="primaryHex" value="#18835f" aria-label="品牌主色十六进制">
+          </div>
+        </div>
+        <div>
+          <label for="secondaryColor">品牌辅色</label>
+          <div class="color-field">
+            <input id="secondaryColor" type="color" value="#72b7df">
+            <input id="secondaryHex" value="#72b7df" aria-label="品牌辅色十六进制">
+          </div>
+        </div>
+      </div>
+
+      <label for="brandMood">医院品牌气质</label>
+      <select id="brandMood">
+        <option>专业可信</option>
+        <option>温柔亲切</option>
+        <option>年轻活泼</option>
+        <option>高端简洁</option>
+        <option>社区友好</option>
+        <option>连锁标准化</option>
+      </select>
+
+      <input id="generationMode" type="hidden" value="DeepSeek 文案草稿">
+
+      <button class="primary" id="generate" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 3v4"></path><path d="M12 17v4"></path><path d="M3 12h4"></path><path d="M17 12h4"></path><path d="m5.6 5.6 2.8 2.8"></path><path d="m15.6 15.6 2.8 2.8"></path><path d="m18.4 5.6-2.8 2.8"></path><path d="m8.4 15.6-2.8 2.8"></path>
+        </svg>
+        <span id="generateLabel">生成 DeepSeek 文案草稿</span>
+      </button>
+
+      <div class="button-row">
+        <button class="ghost" id="saveBrand" type="button">保存品牌档案</button>
+        <button class="ghost" id="exportJson" type="button">导出 JSON</button>
+      </div>
+
+      <div class="ai-panel">
+        <strong>AI 接入状态</strong>
+        <span id="aiStatus">当前工作流：先生成并确认文案，再调用 image2.0 逐页生成知识卡片。</span>
+        <button class="mini-action full-button" id="openAiConfig" type="button">配置模型接口</button>
+      </div>
+    </section>
+
+    <section class="panel stage" aria-label="卡片预览">
+      <div class="toolbar">
+        <div>
+          <h2 id="setTitle">猫咪呕吐判断指南</h2>
+          <small id="setMeta">7 张卡片 · 小红书 3:4 · 合规通过</small>
+        </div>
+        <div class="icon-buttons">
+          <button class="icon-button" type="button" id="prev" title="上一张" aria-label="上一张">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+          </button>
+          <button class="icon-button" type="button" id="next" title="下一张" aria-label="下一张">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="pipeline" id="pipeline"></div>
+      <div class="run-status" id="runStatus" hidden role="status" aria-live="polite">
+        <span class="run-spinner" aria-hidden="true"></span>
+        <div>
+          <b id="runStatusTitle">AI 正在生成</b>
+          <span id="runStatusDetail">正在准备选题和品牌信息</span>
+        </div>
+        <small id="runStatusElapsed">00:00</small>
+      </div>
+
+      <div class="workspace">
+        <div class="preview-wrap">
+          <div class="phone">
+            <article id="card" class="card doctor"></article>
+          </div>
+        </div>
+        <div class="thumbs" id="thumbs" aria-label="卡片列表"></div>
+      </div>
+    </section>
+
+    <aside class="panel inspector" aria-label="编辑和发布">
+      <h2>当前笔记</h2>
+      <div class="tabs" role="tablist" aria-label="右侧面板">
+        <button class="tab active" data-tab="edit" type="button">编辑</button>
+        <button class="tab" data-tab="audit" type="button">合规</button>
+        <button class="tab" data-tab="publish" type="button">发布</button>
+        <button class="tab" data-tab="drafts" type="button">草稿</button>
+        <button class="tab" data-tab="api" type="button">接口</button>
+      </div>
+
+      <section class="tab-panel" id="panel-edit">
+        <label for="cardTitle">当前页标题</label>
+        <textarea id="cardTitle"></textarea>
+        <label for="cardSubtitle">当前页副标题</label>
+        <textarea id="cardSubtitle"></textarea>
+        <label for="cardPoints">要点，每行一条</label>
+        <textarea id="cardPoints"></textarea>
+        <label for="cardNote">医生提示</label>
+        <textarea id="cardNote"></textarea>
+        <div class="button-row">
+          <button class="ghost" id="applyEdit" type="button">应用编辑</button>
+          <button class="ghost" id="rewriteCard" type="button">单页重写</button>
+        </div>
+        <div class="button-row">
+          <button class="ghost" id="compressCard" type="button">压缩文案</button>
+          <button class="danger" id="restoreCard" type="button">恢复本页</button>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="panel-audit" hidden>
+        <div class="meta-box">
+          <h3>合规结果</h3>
+          <div class="audit-list" id="auditList"></div>
+        </div>
+        <div class="meta-box">
+          <h3>风险提示</h3>
+          <p id="auditNotes"></p>
+        </div>
+        <button class="ghost" id="autoFix" type="button">自动合规改写</button>
+      </section>
+
+      <section class="tab-panel" id="panel-publish" hidden>
+        <div class="meta-box">
+          <h3>备选标题</h3>
+          <p id="titles"></p>
+        </div>
+        <div class="meta-box">
+          <h3>正文 Caption</h3>
+          <p id="caption"></p>
+        </div>
+        <div class="meta-box">
+          <h3>推荐标签</h3>
+          <div class="tags" id="tags"></div>
+        </div>
+        <div class="meta-box">
+          <h3>发布包清单</h3>
+          <div class="publish-grid" id="publishPack"></div>
+        </div>
+        <div class="meta-box">
+          <h3>发布前检查</h3>
+          <div class="quality-list" id="qualityList"></div>
+        </div>
+        <div class="meta-box">
+          <h3>医生审核</h3>
+          <div class="review-summary" id="reviewSummary">
+            <div class="review-summary-head">
+              <span class="review-badge empty" id="reviewStatusBadge">待生成</span>
+              <span class="review-reviewer" id="reviewReviewer">未发送</span>
+            </div>
+            <p class="review-link" id="reviewShareLink">尚未生成审核链接。</p>
+            <p class="review-feedback" id="reviewFeedback">生成后可发给医生复核卡片内容。</p>
+          </div>
+          <div class="button-row">
+            <button class="ghost" id="createReviewLink" type="button">生成医生审核链接</button>
+            <button class="ghost" id="copyReviewLink" type="button">复制链接</button>
+          </div>
+          <button class="ghost full-button" id="refreshReviewStatus" type="button">刷新审核状态</button>
+        </div>
+        <div class="meta-box">
+          <h3>文案确认与出图</h3>
+          <p id="copyApprovalStatus">文案未确认。可由运营确认，也可等医生审核通过后再出图。</p>
+          <div class="button-row">
+            <button class="ghost" id="confirmCopy" type="button">确认文案</button>
+            <button class="primary" id="generateImagePages" type="button">image2.0 逐页生成整张卡片</button>
+          </div>
+        </div>
+        <div class="meta-box">
+          <h3>知识卡片成图</h3>
+          <div class="visual-plan" id="visualPlan"></div>
+        </div>
+        <div class="button-row">
+          <button class="ghost" id="copyCaption" type="button">复制正文</button>
+          <button class="ghost" id="export" type="button">导出当前卡</button>
+        </div>
+        <button class="ghost" id="saveDraft" type="button">保存到草稿库</button>
+        <div class="button-row">
+          <button class="ghost" id="exportReviewPdf" type="button">导出审核 PDF</button>
+          <button class="ghost" id="exportZip" type="button">导出发布 ZIP</button>
+        </div>
+        <button class="primary" id="exportAll" type="button">批量导出 7 张 PNG</button>
+      </section>
+
+      <section class="tab-panel" id="panel-drafts" hidden>
+        <div class="meta-box">
+          <h3>草稿库</h3>
+          <p>草稿保存在当前浏览器，适合临时管理当天内容。</p>
+        </div>
+        <div class="draft-list" id="draftList"></div>
+      </section>
+
+      <section class="tab-panel" id="panel-api" hidden>
+        <div class="meta-box">
+          <h3>生成链路</h3>
+          <p>DeepSeek 先生成结构化文案；文案确认或医生审核通过后，再由 image2.0 / GPT-Image-2 按页生成最终知识卡片。</p>
+        </div>
+        <div class="meta-box">
+          <h3>DeepSeek 文案模型</h3>
+          <p id="apiHealth">检查中...</p>
+          <label for="textBaseUrl">Base URL</label>
+          <input id="textBaseUrl" value="https://api.deepseek.com/v1">
+          <label for="textModel">模型</label>
+          <input id="textModel" value="deepseek-v4-pro">
+          <label for="textApiKey">API Key</label>
+          <input id="textApiKey" type="password" placeholder="sk-...">
+        </div>
+        <div class="meta-box">
+          <h3>image2.0 视觉模型</h3>
+          <p>基于 APIMart GPT-Image-2 异步接口：提交任务后返回 task_id，再轮询任务结果拿图片 URL。</p>
+          <label for="imageBaseUrl">Base URL</label>
+          <input id="imageBaseUrl" value="https://api.apimart.ai/v1" placeholder="https://api.apimart.ai/v1">
+          <label for="imageModel">模型</label>
+          <input id="imageModel" value="gpt-image-2">
+          <div class="grid two">
+            <div>
+              <label for="imageSize">比例</label>
+              <select id="imageSize">
+                <option>3:4</option>
+                <option>4:5</option>
+                <option>1:1</option>
+                <option>9:16</option>
+              </select>
+            </div>
+            <div>
+              <label for="imageResolution">分辨率</label>
+              <select id="imageResolution">
+                <option>1k</option>
+                <option>2k</option>
+                <option>4k</option>
+              </select>
+            </div>
+          </div>
+          <label for="imageApiKey">API Key</label>
+          <input id="imageApiKey" type="password" placeholder="视觉模型 Key">
+          <label for="visualPrompt">视觉提示词底稿</label>
+          <textarea id="visualPrompt">宠物医院小红书知识卡片，专业可信，生成可直接发布的完整单页卡片，包含信息层级、宠物医院质感、医院 Logo 区和医生提示区，避免电话、地址、优惠和疗效承诺。</textarea>
+          <div class="button-row">
+            <button class="ghost" id="saveAiConfig" type="button">保存模型配置</button>
+            <button class="ghost" id="testAiConfig" type="button">测试文案生成</button>
+          </div>
+        </div>
+        <div class="meta-box">
+          <h3>请求 Payload</h3>
+          <pre class="code-preview" id="apiRequest"></pre>
+        </div>
+        <div class="meta-box">
+          <h3>响应 Schema</h3>
+          <pre class="code-preview" id="apiResponse"></pre>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite">已完成</div>
+
+  <script>
+    const state = {
+      style: "doctor",
+      active: 0,
+      activeTab: "edit",
+      deck: null,
+      originalCards: [],
+      brandLogo: "",
+      brandLogoReference: "",
+      visualPlan: null,
+      copyApproved: false,
+      isGenerating: false,
+      isGeneratingTopics: false,
+      topicRecommendations: [],
+      topicFingerprint: "",
+      topicTimer: null,
+      generationStartedAt: 0,
+      generationTimer: null,
+      pipelineOverrides: {}
+    };
+
+    const els = {
+      topic: document.querySelector("#topic"),
+      hospitalPositioning: document.querySelector("#hospitalPositioning"),
+      serviceFocus: document.querySelector("#serviceFocus"),
+      localAudience: document.querySelector("#localAudience"),
+      contentStyleGuide: document.querySelector("#contentStyleGuide"),
+      refreshTopics: document.querySelector("#refreshTopics"),
+      topicStatus: document.querySelector("#topicStatus"),
+      pet: document.querySelector("#pet"),
+      type: document.querySelector("#contentType"),
+      audience: document.querySelector("#audience"),
+      cta: document.querySelector("#cta"),
+      hospital: document.querySelector("#hospital"),
+      doctor: document.querySelector("#doctor"),
+      phone: document.querySelector("#phone"),
+      address: document.querySelector("#address"),
+      logoUpload: document.querySelector("#logoUpload"),
+      logoPreview: document.querySelector("#logoPreview"),
+      primaryColor: document.querySelector("#primaryColor"),
+      primaryHex: document.querySelector("#primaryHex"),
+      secondaryColor: document.querySelector("#secondaryColor"),
+      secondaryHex: document.querySelector("#secondaryHex"),
+      brandMood: document.querySelector("#brandMood"),
+      generationMode: document.querySelector("#generationMode"),
+      quickTopics: document.querySelector("#quickTopics"),
+      aiStatus: document.querySelector("#aiStatus"),
+      generate: document.querySelector("#generate"),
+      generateLabel: document.querySelector("#generateLabel"),
+      card: document.querySelector("#card"),
+      thumbs: document.querySelector("#thumbs"),
+      pipeline: document.querySelector("#pipeline"),
+      runStatus: document.querySelector("#runStatus"),
+      runStatusTitle: document.querySelector("#runStatusTitle"),
+      runStatusDetail: document.querySelector("#runStatusDetail"),
+      runStatusElapsed: document.querySelector("#runStatusElapsed"),
+      setTitle: document.querySelector("#setTitle"),
+      setMeta: document.querySelector("#setMeta"),
+      cardTitle: document.querySelector("#cardTitle"),
+      cardSubtitle: document.querySelector("#cardSubtitle"),
+      cardPoints: document.querySelector("#cardPoints"),
+      cardNote: document.querySelector("#cardNote"),
+      auditList: document.querySelector("#auditList"),
+      auditNotes: document.querySelector("#auditNotes"),
+      titles: document.querySelector("#titles"),
+      caption: document.querySelector("#caption"),
+      tags: document.querySelector("#tags"),
+      publishPack: document.querySelector("#publishPack"),
+      qualityList: document.querySelector("#qualityList"),
+      draftList: document.querySelector("#draftList"),
+      reviewStatusBadge: document.querySelector("#reviewStatusBadge"),
+      reviewReviewer: document.querySelector("#reviewReviewer"),
+      reviewShareLink: document.querySelector("#reviewShareLink"),
+      reviewFeedback: document.querySelector("#reviewFeedback"),
+      copyApprovalStatus: document.querySelector("#copyApprovalStatus"),
+      generateImagePages: document.querySelector("#generateImagePages"),
+      apiHealth: document.querySelector("#apiHealth"),
+      textBaseUrl: document.querySelector("#textBaseUrl"),
+      textModel: document.querySelector("#textModel"),
+      textApiKey: document.querySelector("#textApiKey"),
+      imageBaseUrl: document.querySelector("#imageBaseUrl"),
+      imageModel: document.querySelector("#imageModel"),
+      imageSize: document.querySelector("#imageSize"),
+      imageResolution: document.querySelector("#imageResolution"),
+      imageApiKey: document.querySelector("#imageApiKey"),
+      visualPrompt: document.querySelector("#visualPrompt"),
+      visualPlan: document.querySelector("#visualPlan"),
+      apiRequest: document.querySelector("#apiRequest"),
+      apiResponse: document.querySelector("#apiResponse"),
+      app: document.querySelector("#app"),
+      reviewApp: document.querySelector("#reviewApp"),
+      reviewTitle: document.querySelector("#reviewTitle"),
+      reviewMeta: document.querySelector("#reviewMeta"),
+      reviewStatus: document.querySelector("#reviewStatus"),
+      reviewCards: document.querySelector("#reviewCards"),
+      reviewerName: document.querySelector("#reviewerName"),
+      reviewOverall: document.querySelector("#reviewOverall"),
+      toast: document.querySelector("#toast")
+    };
+
+    const topicLibrary = [
+      { title: "猫咪呕吐，什么时候要去医院？", pet: "猫", type: "症状判断", style: "doctor", cta: "预约检查" },
+      { title: "狗狗拉稀，宠主在家先看什么？", pet: "狗", type: "症状判断", style: "doctor", cta: "到院评估" },
+      { title: "猫咪频繁进猫砂盆，可能是什么信号？", pet: "猫", type: "急救提醒", style: "alert", cta: "到院评估" },
+      { title: "夏天宠物中暑，第一时间别做什么？", pet: "猫狗通用", type: "急救提醒", style: "alert", cta: "私信咨询" },
+      { title: "驱虫多久一次？新手宠主收藏版", pet: "猫狗通用", type: "预防科普", style: "report", cta: "收藏备用" },
+      { title: "宠物体检报告怎么看？别只盯红箭头", pet: "猫狗通用", type: "检查项目解释", style: "report", cta: "预约检查" },
+      { title: "幼猫到家第一周，最容易踩的 5 个坑", pet: "猫", type: "日常护理", style: "cute", cta: "收藏备用" },
+      { title: "老年犬体检，哪些项目更值得关注？", pet: "狗", type: "检查项目解释", style: "premium", cta: "预约检查" }
+    ];
+
+    const pipelineSteps = [
+      ["strategy", "选题策划"],
+      ["copy", "DeepSeek 文案"],
+      ["approval", "文案确认"],
+      ["review", "医生审核"],
+      ["visual", "image2.0 出图"]
+    ];
+
+    const petIcon = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M8.8 10.2c.4 1.3 1.6 2.2 3.2 2.2s2.8-.9 3.2-2.2"></path>
+        <path d="M6.2 7.8 4 5.6v5.1c0 4.4 3.6 7.9 8 7.9s8-3.5 8-7.9V5.6l-2.2 2.2"></path>
+        <path d="M9 9h.01"></path>
+        <path d="M15 9h.01"></path>
+      </svg>`;
+
+    function input() {
+      return {
+        topic: els.topic.value.trim(),
+        pet: els.pet.value,
+        type: els.type.value,
+        audience: els.audience.value,
+        cta: els.cta.value,
+        hospital: els.hospital.value.trim() || "宠物医院",
+        doctor: els.doctor.value.trim() || "宠物医生",
+        phone: els.phone.value.trim(),
+        address: els.address.value.trim(),
+        primaryColor: normalizeHex(els.primaryHex.value) || "#18835f",
+        secondaryColor: normalizeHex(els.secondaryHex.value) || "#72b7df",
+        brandMood: els.brandMood.value,
+        logo: state.brandLogo,
+        generationMode: "DeepSeek 文案草稿",
+        hospitalProfile: {
+          positioning: els.hospitalPositioning.value.trim(),
+          services: els.serviceFocus.value.trim(),
+          localAudience: els.localAudience.value.trim(),
+          contentStyleGuide: els.contentStyleGuide.value.trim()
+        }
+      };
+    }
+
+    function isDeepSeekMode(mode) {
+      return mode === "DeepSeek 文案草稿" || mode === "DeepSeek 文案 + 稳定排版";
+    }
+
+    function cleanTopic(topic) {
+      return topic.replace(/[？?。！!]/g, "").trim() || "宠物健康问题";
+    }
+
+    function inferIssue(topic, pet) {
+      const text = topic + pet;
+      if (/中暑|热射|高温/.test(text)) return "中暑";
+      if (/吐|呕/.test(text)) return "呕吐";
+      if (/拉稀|腹泻|软便/.test(text)) return "腹泻";
+      if (/尿|猫砂/.test(text)) return "排尿异常";
+      if (/咳|喷嚏|呼吸/.test(text)) return "呼吸道症状";
+      if (/皮肤|痒|掉毛/.test(text)) return "皮肤瘙痒";
+      if (/驱虫/.test(text)) return "驱虫";
+      if (/疫苗/.test(text)) return "疫苗";
+      if (/绝育/.test(text)) return "绝育";
+      if (/误食|中毒|巧克力|洋葱|葡萄/.test(text)) return "误食风险";
+      if (/体检|检查|报告/.test(text)) return "检查项目";
+      return cleanTopic(topic).replace(/[，,：:、].*$/, "").slice(0, 8);
+    }
+
+    function petLabel(pet) {
+      return pet === "猫狗通用" ? "宠物" : pet;
+    }
+
+    function ctaLine(value) {
+      return {
+        "预约检查": "需要时可以预约基础检查",
+        "私信咨询": "不确定时可以私信描述症状",
+        "收藏备用": "先收藏，关键时刻照着看",
+        "到院评估": "异常持续建议到院评估"
+      }[value];
+    }
+
+    function layoutFor(index, type) {
+      if (index === 0) return "cover";
+      const layouts = {
+        "症状判断": ["cover", "symptom_map", "clinic_tip", "mistake", "warning", "timeline", "summary"],
+        "日常护理": ["cover", "timeline", "clinic_tip", "mistake", "symptom_map", "report", "summary"],
+        "预防科普": ["cover", "report", "timeline", "mistake", "clinic_tip", "symptom_map", "summary"],
+        "急救提醒": ["cover", "warning", "mistake", "symptom_map", "clinic_tip", "timeline", "summary"],
+        "检查项目解释": ["cover", "report", "symptom_map", "timeline", "mistake", "clinic_tip", "summary"]
+      }[type] || ["cover", "symptom_map", "clinic_tip", "mistake", "warning", "timeline", "summary"];
+      return layouts[index] || "summary";
+    }
+
+    function enrichPoints(points, layout, issue) {
+      const defaults = {
+        cover: [`先看精神和食欲`, `再看次数和间隔`, `留意伴随症状`, `不要自行乱用药`],
+        symptom_map: [`第一次出现的时间点`, `一天内发生的次数`, `精神食欲是否下降`, `排便排尿有没有异常`],
+        clinic_tip: [`带上照片或短视频`, `说明近期饮食变化`, `记录体重和年龄`, `告知既往病史`],
+        mistake: [`不要直接套网上偏方`, `不要自行使用人用药`, `不要强行灌水灌食`, `不要拖到精神很差才处理`],
+        warning: [`精神明显变差`, `反复出现或越来越重`, `伴随血便尿血呼吸异常`, `疑似误食中毒或摔伤`],
+        timeline: [`先记录异常开始时间`, `再看精神食欲变化`, `保存照片视频和包装`, `联系医院说明情况`],
+        report: [`指标要结合临床表现`, `单个异常值不能直接确诊`, `复查周期看医生建议`, `旧病历有助于对比`],
+        summary: [`轻微偶发先记录`, `反复出现尽快评估`, `高风险信号别拖`, `科普不能替代面诊`]
+      }[layout] || [];
+      const merged = [...points, ...defaults.map(item => item.replace("异常", issue))];
+      return [...new Set(merged)].slice(0, layout === "cover" ? 4 : 5);
+    }
+
+    function insightFor(layout, issue, data) {
+      return {
+        cover: `这套卡会帮宠主把“能观察”和“该就医”的边界分清楚。`,
+        symptom_map: `医生判断${issue}时，不只看单一症状，更看频率、精神和伴随表现。`,
+        clinic_tip: `把关键信息提前整理好，面诊效率会高很多，也能减少漏问。`,
+        mistake: `不确定原因时，少做刺激性处理，比盲目处理更安全。`,
+        warning: `这些信号提示风险升高，建议由医生结合检查快速评估。`,
+        timeline: `按时间线记录，有助于医生判断症状是在缓解还是加重。`,
+        report: `报告是线索，不是结论；需要和年龄、病史、体征一起看。`,
+        summary: `${data.cta}前，先用频率、精神、食欲、伴随症状做初筛。`
+      }[layout] || `建议结合${data.hospital}医生面诊和检查结果判断。`;
+    }
+
+    function buildCards(data) {
+      const issue = inferIssue(data.topic, data.pet);
+      const petDisplay = petLabel(data.pet);
+      const petName = data.pet === "猫狗通用" ? "毛孩子" : data.pet + "咪";
+      const commonFinal = "具体情况需结合宠物年龄、病史和检查结果判断。";
+      const base = {
+        "症状判断": [
+          ["先看精神", `${petName}${issue}，先别急着喂药`, "先判断精神、食欲、频率和伴随症状，再决定是否尽快就医。", ["精神差或躲起来，要重视", "短时间反复出现，不建议拖", "幼宠、老年宠风险更高"], "不要自行使用止吐、止泻或人用药。"],
+          ["观察重点", "这 4 件事先记录下来", "医生问诊时，这些信息比一句“它不舒服”更有用。", ["发生了几次、间隔多久", "是否吃喝、是否排便排尿", "有没有血、异味或疼痛表现", "最近是否换粮、误食或外出"], "可以拍照片或视频，方便医生判断。"],
+          ["可能原因", "原因可能不止一种", `${issue}可能和饮食、寄生虫、感染、异物、慢性疾病等有关。`, ["偶发不等于一定没事", "频繁出现需要排查病因", "伴随其他症状时优先就医"], "科普内容不能替代面诊和检查。"],
+          ["不要做", "这几件事不建议做", "很多宠主是好心，但处理方式可能让情况变复杂。", ["不要自行喂人用药", "不要强行灌食灌水", "不要只靠网上偏方观察多天"], "尤其是幼宠、老年宠和有慢病的宠物。"],
+          ["就医信号", "出现这些情况，尽快来医院", "以下信号提示风险更高，建议让医生评估。", ["精神明显变差或持续不吃", "反复发作或伴随疼痛", "便血、尿血、呼吸异常", "疑似误食、摔伤或中毒"], `${data.hospital}提醒：越早明确原因，处理越稳妥。`],
+          ["医生建议", "在家可以这样做", "等待就诊前，先减少额外刺激，保留关键信息。", ["暂停可疑零食和新食物", "准备近期饮食和用药信息", "拍下异常排泄物或呕吐物"], "若症状加重，不建议继续在家观察。"],
+          ["总结", `${issue}判断公式`, "频率、精神、食欲、伴随症状，是宠主最该看的 4 个维度。", ["一次轻微：先记录观察", "反复或精神差：尽快就医", ctaLine(data.cta)], commonFinal]
+        ],
+        "日常护理": [
+          ["封面", `${cleanTopic(data.topic)}，宠主这样做更稳`, "日常护理不是越多越好，关键是频率、方式和观察。", ["适合新手宠主收藏", "少踩坑，少折腾", "异常及时问医生"], `${data.hospital}养宠科普`],
+          ["频率", "护理频率看这 3 点", "不同年龄、品种和生活环境，护理节奏会不一样。", ["幼宠和老年宠更需要关注", "长毛、短鼻、皮肤敏感要区别对待", "有病史的宠物按医嘱调整"], "别照搬其他宠物的护理频率。"],
+          ["方法", "正确做法比次数更重要", "过度清洁或粗暴处理，反而可能刺激皮肤和黏膜。", ["动作轻，先安抚再操作", "使用宠物专用产品", "出现红肿疼痛就停下"], "不确定用品是否合适，可以先咨询医生。"],
+          ["误区", "常见误区别踩", "看起来省事的办法，可能埋下健康隐患。", ["不建议长期用人用清洁品", "不要频繁更换护理产品", "异常气味不等于洗洗就好"], "护理解决不了疾病本身。"],
+          ["异常", "这些信号要留意", "护理时正好可以顺手做一次健康观察。", ["抓挠、舔咬明显增加", "皮肤发红、有分泌物", "食欲精神突然变化"], "异常持续时建议到院检查。"],
+          ["清单", "宠主护理小清单", "把复杂护理拆成几个固定动作。", ["看精神食欲", "看皮肤毛发", "看排便排尿", "记录异常变化"], ctaLine(data.cta)],
+          ["总结", "养护的目标是少生病", "规律观察、温和护理、及时就医，比临时补救更有效。", ["不追求一步到位", "不自行乱用药", "有问题找专业帮助"], commonFinal]
+        ],
+        "预防科普": [
+          ["封面", `${cleanTopic(data.topic)}，别等生病才想起`, "预防类项目看似普通，却是宠物长期健康的底盘。", ["疫苗、驱虫、体检都要有节奏", "不同宠物方案不同", "建议建立健康档案"], `${data.hospital}医生科普`],
+          ["为什么", "为什么预防很重要", "很多问题早期不明显，等出现症状时处理成本更高。", ["降低传染病和寄生虫风险", "提前发现慢性问题", "让医生了解健康基线"], "预防不是一次性动作。"],
+          ["周期", "多久做一次？看个体情况", "年龄、生活方式、免疫史都会影响方案。", ["幼宠按免疫程序推进", "成年宠建议定期复查", "外出多、接触多风险更高"], "具体周期以医生建议为准。"],
+          ["误区", "这 3 个想法要改", "很多宠物看起来健康，但不代表没有风险。", ["不出门也可能有寄生虫风险", "打过疫苗不等于终身不用管", "体检不是老年宠专属"], "预防方案需要动态调整。"],
+          ["准备", "到院前准备这些信息", "信息越完整，医生越容易给出合适方案。", ["年龄、体重、绝育情况", "既往疫苗和驱虫记录", "最近食欲精神和排泄情况"], "有旧病历也可以带上。"],
+          ["建议", "建议建立健康档案", "把每次检查、用药、疫苗和驱虫记录下来。", ["方便追踪体重变化", "方便复诊对比", "减少遗漏和重复"], ctaLine(data.cta)],
+          ["总结", "预防做得好，少走弯路", "健康管理是长期工程，不是等出问题才处理。", ["按时预防", "定期检查", "发现异常及时评估"], commonFinal]
+        ],
+        "急救提醒": [
+          ["封面", `${cleanTopic(data.topic)}，先别慌`, "急救内容的重点是降低二次伤害，并尽快获得专业帮助。", ["先停止风险来源", "不要自行喂药催吐", "尽快联系医院"], `${data.hospital}急救提醒`],
+          ["立刻做", "第一步：确认安全", "先让宠物离开危险环境，避免继续接触可疑物。", ["远离热源、毒物或异物", "保持呼吸道通畅", "不要强行按压或刺激"], "若宠物攻击性变强，保护好自己。"],
+          ["别做", "这些操作不要自行尝试", "错误处理可能耽误病情，也可能增加风险。", ["不要自行催吐", "不要喂人用药", "不要强行灌水灌食"], "尤其是误食、抽搐、呼吸异常时。"],
+          ["记录", "到院前记录 4 类信息", "医生需要尽快判断风险等级和处理方向。", ["发生时间", "接触或误食了什么", "大概剂量或数量", "目前精神和呼吸状态"], "包装、照片、视频都可以带来。"],
+          ["就医", "这些情况请立刻就医", "急救场景里，不建议长时间在家观察。", ["呼吸困难、抽搐或昏迷", "持续呕吐腹泻", "疑似中毒或吞异物", "明显疼痛或出血"], "路上保持安静和通风。"],
+          ["准备", "来医院前这样准备", "尽量减少搬动和刺激，带齐关键信息。", ["提前电话说明情况", "用航空箱或毛巾安全转运", "带上可疑物包装"], ctaLine(data.cta)],
+          ["总结", "急救口诀：停、记、问、送", "停止风险、记录信息、联系医院、及时送医。", ["不自行用药", "不拖延观察", "让医生评估"], commonFinal]
+        ],
+        "检查项目解释": [
+          ["封面", `${cleanTopic(data.topic)}，宠主看这篇就够`, "把检查目的、适合对象和到院准备说清楚。", ["不是为了多检查", "是为了更准确判断", "结果要结合临床表现"], `${data.hospital}检查项目科普`],
+          ["用途", "这项检查主要看什么", "检查不是答案本身，而是帮助医生找到更可靠的判断依据。", ["看身体基础状态", "排查隐藏风险", "辅助制定处理方案"], "是否需要检查由医生结合情况判断。"],
+          ["适合谁", "这些情况更建议了解", "不同年龄和病史的宠物，检查重点不一样。", ["幼宠、老年宠", "症状反复或原因不明", "术前、用药前或复诊"], "不要只根据单一指标自行判断。"],
+          ["准备", "到院前这样准备", "准备越充分，检查和问诊越顺畅。", ["带上既往病历", "记录近期饮食排泄", "说明正在使用的药物"], "部分检查是否需要空腹，以医生通知为准。"],
+          ["误区", "检查报告别这样看", "单个异常值不等于确诊，也不代表一定很严重。", ["不要只看红色箭头", "不要忽略精神食欲", "不要自行停药或换药"], "结果解释建议交给医生。"],
+          ["复盘", "拿到结果后问这 3 件事", "让检查真正服务后续养护。", ["目前最需要关注什么", "多久复查比较合适", "在家观察哪些变化"], ctaLine(data.cta)],
+          ["总结", "检查的价值是更早发现问题", "清楚身体状态，后续护理和治疗才更有方向。", ["按需检查", "结合病史", "听医生解释"], commonFinal]
+        ]
+      };
+
+      const rows = base[data.type] || base["症状判断"];
+      const cards = rows.map((row, index) => {
+        const layout = layoutFor(index, data.type);
+        return {
+          id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${index}`,
+          label: row[0],
+          title: row[1],
+          subtitle: row[2],
+          points: enrichPoints(row[3], layout, issue),
+          note: row[4],
+          insight: row[5] || insightFor(layout, issue, data),
+          formula: index === rows.length - 1 ? `${issue} = 频率 + 精神 + 伴随症状` : "",
+          layout,
+          riskLevel: /急救|误食|中毒|呼吸|抽搐|尿|血|疼痛/.test(row.join("")) ? "high" : index === 0 ? "medium" : "low"
+        };
+      });
+
+      return {
+        source: "local-ui-engine",
+        topic: data.topic,
+        issue,
+        title: `${data.pet}${issue}科普笔记`,
+        strategy: {
+          audience: data.audience,
+          contentType: data.type,
+          conversion: data.cta,
+          generationMode: data.generationMode,
+          risk: cards.some(card => card.riskLevel === "high") ? "高风险提醒型" : "常规科普型"
+        },
+        cards,
+        titles: [
+          `${petDisplay}${issue}要不要去医院？先看这 4 点`,
+          `宠物医生提醒：${petDisplay}${issue}这些信号别忽视`,
+          `${petDisplay}${issue}后，宠主在家可以观察什么？`,
+          `${data.audience}收藏：${petDisplay}${issue}处理思路`,
+          `${petDisplay}${issue}别乱喂药，先判断这些情况`
+        ],
+        caption: `很多宠主遇到${petDisplay}${issue}，第一反应是上网搜药或先等等。\n\n更稳妥的做法是：先记录频率、精神、食欲、排便排尿和伴随症状。若反复出现、精神变差、疑似误食，或宠物本身是幼宠/老年宠，建议尽快到院让医生评估。\n\n这篇给${data.audience}做成了可收藏清单，遇到类似情况可以先对照，但不要用它替代面诊。\n\n${data.hospital}｜${data.doctor}${data.phone ? "｜" + data.phone : ""}`,
+        tags: ["宠物医院", "养宠科普", `${petDisplay}健康`, `${issue}怎么办`, data.audience, "宠物医生", data.cta],
+        brand: {
+          hospital: data.hospital,
+          doctor: data.doctor,
+          phone: data.phone,
+          address: data.address,
+          primaryColor: data.primaryColor,
+          secondaryColor: data.secondaryColor,
+          mood: data.brandMood,
+          logo: data.logo,
+          profile: data.hospitalProfile
+        },
+        publishPack: buildPublishPack(data, cards),
+        audit: auditDeck(cards)
+      };
+    }
+
+    function buildPublishPack(data, cards) {
+      return [
+        { name: "图文卡片", value: `${cards.length} 张 3:4 PNG` },
+        { name: "账号身份", value: `${data.hospital}｜${data.doctor}` },
+        { name: "医院定位", value: trimText(data.hospitalProfile?.positioning || "未配置医院画像", 42) },
+        { name: "转化动作", value: data.cta },
+        { name: "文案来源", value: "DeepSeek 结构化文案（失败时自动兜底）" },
+        { name: "视觉方式", value: visualMethodLabel() },
+        { name: "审核状态", value: copyReadyForImage() ? "文案已确认" : "待确认/待医生复核" }
+      ];
+    }
+
+    function visualMethodLabel() {
+      const generated = state.deck?.cards?.filter((card, index) => card.generatedImageUrl || pageImageUrl(index)).length || 0;
+      if (generated) return `image2.0 逐页成图 ${generated}/${state.deck.cards.length}`;
+      return "待文案确认后逐页出图";
+    }
+
+    function auditDeck(cards) {
+      const text = cards.map(card => [card.title, card.subtitle, ...card.points, card.note].join(" ")).join(" ");
+      const checks = [
+        { key: "diagnosis", label: "无远程确诊", level: /确诊|就是|一定是/.test(text) ? "warn" : "pass" },
+        { key: "drug", label: "无自行用药", level: /自行.*药|人用药|喂药/.test(text) ? "warn" : "pass" },
+        { key: "promise", label: "无疗效承诺", level: /包治|根治|立刻好|保证/.test(text) ? "risk" : "pass" },
+        { key: "triage", label: "包含就医提醒", level: /就医|到院|医生评估|检查/.test(text) ? "pass" : "warn" },
+        { key: "fear", label: "不过度恐吓", level: /会死|必死|很可怕/.test(text) ? "risk" : "pass" }
+      ];
+      const notes = checks
+        .filter(item => item.level !== "pass")
+        .map(item => {
+          if (item.key === "drug") return "出现用药相关表达，已保留“不建议自行用药”的安全边界。";
+          if (item.key === "diagnosis") return "避免使用绝对诊断表达，建议改为“可能”“需要医生评估”。";
+          if (item.key === "promise") return "存在疗效承诺风险，需要删除或改写。";
+          if (item.key === "triage") return "建议补充高风险症状的就医提醒。";
+          return "建议降低恐吓式表达。";
+        });
+      return {
+        status: checks.some(item => item.level === "risk") ? "需复核" : checks.some(item => item.level === "warn") ? "已提示" : "通过",
+        checks,
+        notes: notes.length ? notes : ["当前内容符合基础科普边界：不替代面诊，不承诺疗效，不鼓励自行用药。"]
+      };
+    }
+
+    function renderPipeline(activeKey = "approval") {
+      const order = pipelineSteps.map(item => item[0]);
+      const activeIndex = order.indexOf(activeKey);
+      const allDone = activeKey === "complete";
+      els.pipeline.innerHTML = pipelineSteps.map(([key, label], index) => {
+        const override = state.pipelineOverrides?.[key] || "";
+        const done = allDone || index < activeIndex || (key === activeKey && override && !/待|等待|进行中/.test(override));
+        const active = !allDone && key === activeKey && !done;
+        const status = override || (done ? "完成" : active ? "进行中" : "等待");
+        const flagged = /失败|回退|本地|处理中/.test(status) ? "warn" : "";
+        const failed = /失败/.test(status) ? "fail" : "";
+        return `<div class="pipe-step ${done ? "done" : ""} ${active ? "active" : ""} ${flagged} ${failed}">
+          <b>${label}</b><span>${done ? status : status}</span>
+        </div>`;
+      }).join("");
+    }
+
+    function setGenerationRunning(active, title = "", detail = "") {
+      state.isGenerating = active;
+      window.clearInterval(state.generationTimer);
+      if (!active) {
+        state.generationTimer = null;
+        state.generationStartedAt = 0;
+        els.runStatus.hidden = true;
+        els.generate.disabled = false;
+        els.generate.classList.remove("loading");
+        els.generateLabel.textContent = "生成 DeepSeek 文案草稿";
+        els.generate.removeAttribute("aria-busy");
+        return;
+      }
+      state.generationStartedAt = Date.now();
+      els.runStatus.hidden = false;
+      els.generate.disabled = true;
+      els.generate.classList.add("loading");
+      els.generateLabel.textContent = "文案生成中...";
+      els.generate.setAttribute("aria-busy", "true");
+      updateGenerationStatus(title || "AI 正在生成", detail || "正在准备选题和品牌信息");
+      state.generationTimer = window.setInterval(() => updateGenerationElapsed(), 1000);
+    }
+
+    function updateGenerationStatus(title, detail) {
+      if (!state.isGenerating) return;
+      els.runStatus.hidden = false;
+      els.runStatusTitle.textContent = title;
+      els.runStatusDetail.textContent = detail;
+      updateGenerationElapsed();
+    }
+
+    function updateGenerationElapsed() {
+      if (!state.generationStartedAt) {
+        els.runStatusElapsed.textContent = "00:00";
+        return;
+      }
+      const seconds = Math.max(0, Math.floor((Date.now() - state.generationStartedAt) / 1000));
+      const minutes = Math.floor(seconds / 60);
+      const rest = seconds % 60;
+      els.runStatusElapsed.textContent = `${String(minutes).padStart(2, "0")}:${String(rest).padStart(2, "0")}`;
+    }
+
+    function cardTemplate(card, index, total) {
+      const generatedImage = pageImageUrl(index);
+      if (generatedImage) {
+        return `<img class="generated-card-image" src="${escapeHtml(generatedImage)}" alt="第 ${index + 1} 页 image2.0 生成知识卡片">`;
+      }
+      const brand = state.deck.brand;
+      const logo = brand.logo
+        ? `<img src="${brand.logo}" alt="${escapeHtml(brand.hospital)} Logo">`
+        : petIcon;
+      const points = card.points.map((point, i) => `
+        <div class="bullet">
+          <b>${i + 1}</b>
+          <span>${escapeHtml(point)}</span>
+        </div>
+      `).join("");
+      const signalPoints = card.points.slice(0, 4).map((point, i) => `
+        <div class="signal"><b>${["看", "记", "避", "问"][i] || i + 1}</b>${escapeHtml(point)}</div>
+      `).join("");
+      const reportRows = card.points.slice(0, 5).map((point, i) => `
+        <div class="report-row"><b>${["目的", "重点", "准备", "误区", "复查"][i] || "要点"}</b><span>${escapeHtml(point)}</span></div>
+      `).join("");
+      const timelineRows = card.points.slice(0, 5).map((point, i) => `
+        <div class="time-step"><b>${String(i + 1).padStart(2, "0")}</b><span>${escapeHtml(point)}</span></div>
+      `).join("");
+      const layout = {
+        cover: `
+          <div class="layout-shell">
+            <span class="layout-kicker">${escapeHtml(card.label)} · ${escapeHtml(state.deck.strategy.risk)}</span>
+            <h3 class="cover-title">${escapeHtml(card.title)}</h3>
+            <p class="subtitle">${escapeHtml(card.subtitle)}</p>
+            <div class="cover-slab"><strong>${escapeHtml(state.deck.issue)}</strong><span>${escapeHtml(card.insight || "先分清轻重缓急，再决定是否到院。")}</span></div>
+            <div class="signal-grid">${signalPoints}</div>
+          </div>
+        `,
+        symptom_map: `
+          <div class="layout-shell">
+            <span class="layout-kicker">${escapeHtml(card.label)}</span>
+            <h3>${escapeHtml(card.title)}</h3>
+            <p class="subtitle">${escapeHtml(card.subtitle)}</p>
+            <div class="signal-grid">${signalPoints}</div>
+            <div class="clinic-tip"><strong>医生会看什么</strong><p>${escapeHtml(card.insight || card.note)}</p></div>
+          </div>
+        `,
+        warning: `
+          <div class="layout-shell">
+            <span class="layout-kicker">${escapeHtml(card.label)}</span>
+            <h3>${escapeHtml(card.title)}</h3>
+            <p class="subtitle">${escapeHtml(card.subtitle)}</p>
+            <div class="danger-panel">${points}</div>
+          </div>
+        `,
+        mistake: `
+          <div class="layout-shell">
+            <span class="layout-kicker">${escapeHtml(card.label)}</span>
+            <h3>${escapeHtml(card.title)}</h3>
+            <p class="subtitle">${escapeHtml(card.subtitle)}</p>
+            <div class="danger-panel">${points}</div>
+            <div class="clinic-tip"><strong>替代做法</strong><p>${escapeHtml(card.insight || card.note)}</p></div>
+          </div>
+        `,
+        clinic_tip: `
+          <div class="layout-shell">
+            <span class="layout-kicker">${escapeHtml(card.label)}</span>
+            <h3>${escapeHtml(card.title)}</h3>
+            <p class="subtitle">${escapeHtml(card.subtitle)}</p>
+            <div class="bullets">${points}</div>
+            <div class="clinic-tip"><strong>${escapeHtml(brand.doctor || "医生")}提示</strong><p>${escapeHtml(card.insight || card.note)}</p></div>
+          </div>
+        `,
+        report: `
+          <div class="layout-shell">
+            <span class="layout-kicker">${escapeHtml(card.label)}</span>
+            <h3>${escapeHtml(card.title)}</h3>
+            <p class="subtitle">${escapeHtml(card.subtitle)}</p>
+            <div class="report-grid-mini">${reportRows}</div>
+          </div>
+        `,
+        timeline: `
+          <div class="layout-shell">
+            <span class="layout-kicker">${escapeHtml(card.label)}</span>
+            <h3>${escapeHtml(card.title)}</h3>
+            <p class="subtitle">${escapeHtml(card.subtitle)}</p>
+            <div class="timeline-list">${timelineRows}</div>
+          </div>
+        `,
+        summary: `
+          <div class="layout-shell">
+            <span class="layout-kicker">${escapeHtml(card.label)}</span>
+            <h3>${escapeHtml(card.title)}</h3>
+            <p class="subtitle">${escapeHtml(card.subtitle)}</p>
+            <div class="formula-card"><b>${escapeHtml(card.formula || `${state.deck.issue}判断公式`)}</b><span>${escapeHtml(card.insight || card.points.join(" / "))}</span></div>
+            <div class="bullets">${points}</div>
+          </div>
+        `
+      }[card.layout] || `
+        <div class="layout-shell">
+          <span class="layout-kicker">${escapeHtml(card.label)}</span>
+          <h3>${escapeHtml(card.title)}</h3>
+          <p class="subtitle">${escapeHtml(card.subtitle)}</p>
+          <div class="bullets">${points}</div>
+        </div>`;
+      return `
+        <div class="topline">
+          <span class="chip">${escapeHtml(state.deck.issue)} · ${escapeHtml(card.label)}</span>
+          <span>${escapeHtml(brand.hospital)}</span>
+        </div>
+        <div class="pet-icon">${logo}</div>
+        ${layout}
+        <div class="card-footer">
+          <div class="doctor-note">${escapeHtml(card.note)}</div>
+          <div class="page-num">${String(index + 1).padStart(2, "0")} / ${String(total).padStart(2, "0")}</div>
+        </div>
+      `;
+    }
+
+    function render() {
+      const deck = state.deck;
+      const card = deck.cards[state.active];
+      deck.audit = auditDeck(deck.cards);
+      applyBrandTheme(deck.brand);
+      const generated = Boolean(pageImageUrl(state.active));
+      els.card.className = generated
+        ? "card generated-page"
+        : `card ${state.style} layout-${card.layout} branded`;
+      els.card.innerHTML = cardTemplate(card, state.active, deck.cards.length);
+      els.setTitle.textContent = deck.title;
+      els.setMeta.textContent = `${deck.cards.length} 张卡片 · ${deck.strategy.risk} · 合规${deck.audit.status}`;
+      els.thumbs.innerHTML = deck.cards.map((item, i) => {
+        const imageState = pageImageState(i);
+        return `
+          <div class="thumb ${i === state.active ? "active" : ""}" data-index="${i}">
+            <button class="thumb-main" type="button" data-index="${i}">
+              <div class="outline-row">
+                <div class="outline-page">${String(i + 1).padStart(2, "0")}</div>
+                <div class="outline-main">
+                  <strong>${escapeHtml(item.title)}</strong>
+                  <div class="outline-meta">
+                    <span class="outline-pill">${escapeHtml(pageLabel(item, i))}</span>
+                    <span class="outline-pill ${item.riskLevel}">${escapeHtml(riskLabel(item.riskLevel))}</span>
+                  </div>
+                </div>
+                <div class="outline-action ${imageState.className}">${escapeHtml(imageState.status)}</div>
+              </div>
+            </button>
+            ${imageState.action ? `<button class="thumb-retry ${imageState.className}" type="button" data-retry-page="${i}">${escapeHtml(imageState.action)}</button>` : ""}
+          </div>
+        `;
+      }).join("");
+      renderEditor();
+      renderAudit();
+      renderPublish();
+      renderApiContract();
+      renderDrafts();
+    }
+
+    function visualImageUrl() {
+      return pageImageUrl(state.active);
+    }
+
+    function pageDelivered(index) {
+      return Boolean(pageImageUrl(index));
+    }
+
+    function cleanErrorMessage(value) {
+      const text = String(value || "");
+      if (!text) return "";
+      if (/524|A timeout occurred|Cloudflare|origin web server timed out/i.test(text)) {
+        return "APIMart 上游超时（524）：任务可能仍在排队或处理中，请稍后检查进度/重试。";
+      }
+      if (/AbortError|超时|timeout|timed out/i.test(text)) {
+        return text.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 120) || "上游超时，请稍后检查进度/重试。";
+      }
+      return text.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 180);
+    }
+
+    function pageImageUrl(index) {
+      const card = state.deck?.cards?.[index];
+      const page = state.visualPlan?.pages?.[index];
+      const raw = card?.generatedImageUrl || page?.referenceImage?.url || page?.resultImages?.[0] || "";
+      return pageImageProxy(raw);
+    }
+
+    function pageImageProxy(raw) {
+      if (!raw) return "";
+      if (raw.startsWith("/api/image-proxy")) return raw;
+      if (raw.startsWith("data:")) return raw;
+      if (/^https?:\/\//.test(raw)) return `/api/image-proxy?url=${encodeURIComponent(raw)}`;
+      return raw;
+    }
+
+    function pageImageState(index) {
+      if (pageImageUrl(index)) {
+        return { status: "已成图", action: "", className: "done" };
+      }
+      const page = state.visualPlan?.pages?.[index] || {};
+      const status = page.taskStatus || "";
+      if (status === "timeout") {
+        return { status: "上游超时", action: page.taskId ? "检查进度" : "重试本页", className: "pending" };
+      }
+      if (status === "failed") {
+        return { status: "失败", action: "重试本页", className: "failed" };
+      }
+      if (status === "processing" || status === "submitted") {
+        return { status: "处理中", action: "检查进度", className: "pending" };
+      }
+      if (copyReadyForImage()) {
+        return { status: "待出图", action: "生成本页", className: "" };
+      }
+      return { status: index === state.active ? "编辑中" : "切换", action: "", className: "" };
+    }
+
+    function renderEditor() {
+      const card = state.deck.cards[state.active];
+      els.cardTitle.value = card.title;
+      els.cardSubtitle.value = card.subtitle;
+      els.cardPoints.value = card.points.join("\n");
+      els.cardNote.value = card.note;
+    }
+
+    function renderAudit() {
+      els.auditList.innerHTML = state.deck.audit.checks.map(item => `<span class="audit ${item.level}">${item.label}</span>`).join("");
+      els.auditNotes.textContent = state.deck.audit.notes.join("\n");
+    }
+
+    function renderPublish() {
+      const deck = state.deck;
+      els.titles.textContent = deck.titles.map((title, i) => `${i + 1}. ${title}`).join("\n");
+      els.caption.textContent = deck.caption;
+      els.tags.innerHTML = deck.tags.map(tag => `<span class="tag">#${escapeHtml(tag)}</span>`).join("");
+      els.publishPack.innerHTML = deck.publishPack.map(item => `
+        <div class="publish-item">
+          <b>${escapeHtml(item.name)}</b>
+          <span>${escapeHtml(item.value)}</span>
+        </div>
+      `).join("");
+      els.qualityList.innerHTML = qualityChecks(deck).map(item => `
+        <div class="quality-item">
+          <span class="quality-dot ${item.level}">${item.level === "pass" ? "✓" : "!"}</span>
+          <div><b>${escapeHtml(item.title)}</b><br>${escapeHtml(item.message)}</div>
+        </div>
+      `).join("");
+      renderReviewSummary(deck);
+      renderCopyApproval();
+      renderVisualPlan();
+      els.aiStatus.textContent = modeStatus(deck.strategy.generationMode, deck.source);
+    }
+
+    function renderReviewSummary(deck) {
+      if (!deck.reviewId) {
+        els.reviewStatusBadge.textContent = "待生成";
+        els.reviewStatusBadge.className = "review-badge empty";
+        els.reviewReviewer.textContent = "未发送";
+        els.reviewShareLink.textContent = "尚未生成审核链接。";
+        els.reviewFeedback.textContent = "生成后可发给医生复核卡片内容。";
+        return;
+      }
+      const record = getReviewRecord(deck.reviewId);
+      if (!record) {
+        els.reviewStatusBadge.textContent = "读取中";
+        els.reviewStatusBadge.className = "review-badge";
+        els.reviewReviewer.textContent = "正在同步";
+        els.reviewShareLink.textContent = reviewLink(deck.reviewId);
+        els.reviewFeedback.textContent = "正在从后端读取医生审核状态。";
+        fetchReviewRecord(deck.reviewId).then(latest => {
+          if (latest && state.deck?.reviewId === deck.reviewId) renderReviewRecord(latest);
+          if (!latest && state.deck?.reviewId === deck.reviewId) {
+            els.reviewStatusBadge.textContent = "记录丢失";
+            els.reviewStatusBadge.className = "review-badge changes";
+            els.reviewReviewer.textContent = "请重新生成";
+            els.reviewFeedback.textContent = "后端没有找到这条审核记录。";
+          }
+        });
+        return;
+      }
+      renderReviewRecord(record);
+      fetchReviewRecord(deck.reviewId).then(latest => {
+        if (latest && state.deck?.reviewId === deck.reviewId) renderReviewRecord(latest);
+      });
+    }
+
+    function renderReviewRecord(record) {
+      const link = reviewLink(record.id);
+      const status = reviewStatusLabel(record.status);
+      if (record.status === "approved") {
+        state.copyApproved = true;
+        state.pipelineOverrides.approval = "已确认";
+        state.pipelineOverrides.review = "已通过";
+      } else if (record.status === "changes") {
+        state.pipelineOverrides.review = "需修改";
+      } else {
+        state.pipelineOverrides.review = "待审核";
+      }
+      els.reviewStatusBadge.textContent = status;
+      els.reviewStatusBadge.className = `review-badge ${record.status === "approved" ? "approved" : record.status === "changes" ? "changes" : ""}`;
+      const reviewedAt = record.submittedAt ? `｜${formatDate(record.submittedAt)}` : "";
+      els.reviewReviewer.textContent = record.reviewer ? `${record.reviewer}${reviewedAt}` : `链接已生成${reviewedAt}`;
+      els.reviewShareLink.textContent = link;
+      els.reviewFeedback.textContent = reviewFeedbackText(record);
+    }
+
+    function reviewFeedbackText(record) {
+      if (record.status === "pending") return "医生还没有提交审核意见。";
+      const pageComments = Object.entries(record.comments || {})
+        .filter(([, value]) => String(value || "").trim())
+        .map(([page, value]) => `第 ${Number(page) + 1} 页：${String(value).trim()}`);
+      const summary = [record.overall, ...pageComments].filter(Boolean).join("\n");
+      if (summary) return summary;
+      return record.status === "approved" ? "医生已确认可发布。" : "医生标记为需要修改。";
+    }
+
+    function reviewApproved() {
+      const id = state.deck?.reviewId;
+      if (!id) return false;
+      return getReviewRecord(id)?.status === "approved";
+    }
+
+    function copyReadyForImage() {
+      return Boolean(state.copyApproved || reviewApproved());
+    }
+
+    function renderCopyApproval() {
+      if (!els.copyApprovalStatus) return;
+      const generatedCount = state.deck.cards.filter((card, index) => pageDelivered(index)).length;
+      if (generatedCount) {
+        els.copyApprovalStatus.textContent = `已生成 ${generatedCount} / ${state.deck.cards.length} 页 image2.0 知识卡片。`;
+        return;
+      }
+      if (reviewApproved()) {
+        els.copyApprovalStatus.textContent = "医生已审核通过，可以逐页生成知识卡片。";
+        return;
+      }
+      els.copyApprovalStatus.textContent = state.copyApproved
+        ? "文案已确认，可以逐页生成知识卡片。"
+        : "文案未确认。可由运营确认，也可等医生审核通过后再出图。";
+    }
+
+    function confirmCopy() {
+      state.copyApproved = true;
+      state.pipelineOverrides.approval = "已确认";
+      renderPipeline("approval");
+      render();
+      showToast("文案已确认，可以生成知识卡片");
+    }
+
+    function markCopyChanged() {
+      if (!state.deck) return;
+      state.copyApproved = false;
+      state.visualPlan = null;
+      state.deck.visualPlan = null;
+      state.deck.cards.forEach(card => delete card.generatedImageUrl);
+      state.pipelineOverrides.approval = "待确认";
+      state.pipelineOverrides.visual = "";
+    }
+
+    function qualityChecks(deck) {
+      const longCards = deck.cards.filter(card => Array.from(card.title).length > 22 || Array.from(card.subtitle).length > 42);
+      return [
+        {
+          level: deck.cards.length >= 4 && deck.cards.length <= 9 ? "pass" : "warn",
+          title: "卡片数量",
+          message: `${deck.cards.length} 张；建议小红书科普控制在 4-9 张。`
+        },
+        {
+          level: deck.audit.status === "需复核" ? "risk" : deck.audit.status === "已提示" ? "warn" : "pass",
+          title: "医疗合规",
+          message: deck.audit.status === "通过" ? "基础合规检查通过。" : "存在提示项，建议医生复核后发布。"
+        },
+        {
+          level: deck.brand.logo ? "pass" : "warn",
+          title: "品牌识别",
+          message: deck.brand.logo ? "已配置 Logo。" : "未上传 Logo，发布时品牌识别会偏弱。"
+        },
+        {
+          level: /预约|私信|收藏|到院|咨询|检查|评估/.test(deck.caption + deck.cards.map(card => card.note).join("")) ? "pass" : "warn",
+          title: "转化动作",
+          message: "检查正文或医生提示里是否有明确 CTA。"
+        },
+        {
+          level: longCards.length ? "warn" : "pass",
+          title: "文字长度",
+          message: longCards.length ? `${longCards.length} 张卡片文字偏长，建议压缩。` : "卡片标题和副标题长度正常。"
+        }
+      ];
+    }
+
+    function renderApiContract() {
+      const data = input();
+      const payload = apiPayload(data);
+      const schema = {
+        noteTitle: "string",
+        titles: ["string"],
+        caption: "string",
+        hashtags: ["string"],
+        cards: [{
+          page: "number",
+          layout: "cover | symptom_map | clinic_tip | mistake | warning | timeline | report | summary",
+          label: "string",
+          title: "string",
+          subtitle: "string",
+          points: ["string"],
+          insight: "string",
+          formula: "string",
+          doctorNote: "string",
+          riskLevel: "low | medium | high"
+        }],
+        compliance: {
+          status: "passed | warned | needs_review",
+          checks: ["diagnosis_boundary", "drug_safety", "treatment_claim", "triage_hint"]
+        },
+        visualStyle: {
+          source: "image-task:gpt-image-2 | local-visual-planner",
+          taskId: "task_xxx",
+          taskStatus: "submitted | processing | completed | failed",
+          imageRequest: { size: "3:4", resolution: "1k", n: 1 },
+          referenceImage: { url: "string" }
+        }
+      };
+      els.apiRequest.textContent = JSON.stringify(payload, null, 2);
+      els.apiResponse.textContent = JSON.stringify(schema, null, 2);
+      refreshApiHealth();
+    }
+
+    async function refreshApiHealth() {
+      try {
+        const response = await fetch("/api/health");
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const health = await response.json();
+        els.textBaseUrl.value = health.text?.baseUrl || health.baseUrl || els.textBaseUrl.value;
+        els.textModel.value = health.text?.model || health.model || els.textModel.value;
+        els.textApiKey.placeholder = health.text?.keyPreview ? `已保存：${health.text.keyPreview}` : "DeepSeek API Key";
+        els.imageBaseUrl.value = health.image?.baseUrl || els.imageBaseUrl.value;
+        els.imageModel.value = health.image?.model || els.imageModel.value;
+        els.imageApiKey.placeholder = health.image?.keyPreview ? `已保存：${health.image.keyPreview}` : "APIMart API Key";
+        const textStatus = health.text?.configured ? `DeepSeek 已配置：${health.text.model}` : "DeepSeek 未配置 Key";
+        const imageStatus = health.image?.configured ? `image2.0 已配置：${health.image.model}` : "image2.0 未接入";
+        els.apiHealth.textContent = `${textStatus}｜${imageStatus}`;
+      } catch {
+        els.apiHealth.textContent = "当前页面不是由 Node API 服务提供，真实接口不可用。";
+      }
+    }
+
+    async function saveAiConfig() {
+      try {
+        const response = await fetch("/api/ai-config", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            textBaseUrl: els.textBaseUrl.value.trim(),
+            textModel: els.textModel.value.trim(),
+            textApiKey: els.textApiKey.value.trim(),
+            imageBaseUrl: els.imageBaseUrl.value.trim(),
+            imageModel: els.imageModel.value.trim(),
+            imageApiKey: els.imageApiKey.value.trim()
+          })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || data.error || `HTTP ${response.status}`);
+        els.textApiKey.value = "";
+        els.imageApiKey.value = "";
+        await refreshApiHealth();
+        showToast(data.text?.configured ? "DeepSeek 文案模型已保存" : "模型地址已保存，待补 API Key");
+      } catch (error) {
+        showToast(`模型配置失败：${error.message}`);
+      }
+    }
+
+    async function testAiConfig() {
+      await generate();
+    }
+
+    async function generateImagePages() {
+      return generateDirectImagePages();
+    }
+
+    async function generateDirectImagePages() {
+      if (state.isGenerating) {
+        showToast("AI 正在生成，请稍等");
+        return;
+      }
+      if (!state.deck) {
+        showToast("请先生成文案草稿");
+        return;
+      }
+      if (!copyReadyForImage()) {
+        showToast("请先确认文案，或等待医生审核通过");
+        return;
+      }
+      setGenerationRunning(true, "image2.0 正在逐页出图", "正在准备第 1 页知识卡片");
+      state.pipelineOverrides.visual = "进行中";
+      renderPipeline("visual");
+      try {
+        const existingPages = state.visualPlan?.pages || [];
+        state.visualPlan = {
+          source: "image-pages:gpt-image-2",
+          styleName: `${state.deck.brand.hospital} · 逐页知识卡片`,
+          pages: state.deck.cards.map((card, index) => ({
+            ...(existingPages[index] || {}),
+            page: index + 1,
+            title: card.title,
+            taskStatus: (card.generatedImageUrl || pageImageUrl(index)) ? "completed" : "waiting"
+          }))
+        };
+        renderVisualPlan();
+        const failures = [];
+        const deferred = [];
+        for (let index = 0; index < state.deck.cards.length; index += 1) {
+          if (pageImageUrl(index)) {
+            state.visualPlan.pages[index] = {
+              ...state.visualPlan.pages[index],
+              taskStatus: "completed",
+              progress: 100
+            };
+            continue;
+          }
+          const existingTask = state.visualPlan.pages[index]?.taskId;
+          const existingStatus = state.visualPlan.pages[index]?.taskStatus;
+          state.active = index;
+          updateGenerationStatus(
+            "image2.0 正在逐页出图",
+            existingTask && existingStatus !== "failed"
+              ? `第 ${index + 1} / ${state.deck.cards.length} 页：检查已有任务进度`
+              : `第 ${index + 1} / ${state.deck.cards.length} 页：提交任务`
+          );
+          render();
+          try {
+            if (existingTask && existingStatus !== "failed") {
+                await pollVisualPageTask(index, existingTask, {
+                  announce: false,
+                  initialDelay: 0,
+                  attempts: 4,
+                  interval: 5000,
+                  onStatus: (title, detail) => updateGenerationStatus(title, detail)
+                });
+            } else {
+              await runVisualPageGeneration(index, {
+                attempts: 10,
+                interval: 5000,
+                onStatus: (title, detail) => updateGenerationStatus(title, detail)
+              });
+            }
+          } catch (error) {
+            const message = cleanErrorMessage(error.message || "未知错误");
+            failures.push({ page: index + 1, message });
+            state.visualPlan.pages[index] = {
+              ...state.visualPlan.pages[index],
+              taskStatus: "failed",
+              error: message
+            };
+            renderVisualPlan();
+            render();
+          }
+          const page = state.visualPlan.pages[index] || {};
+          if (!pageImageUrl(index) && page.transient && !page.taskId) {
+            deferred.push(index + 1);
+            updateGenerationStatus("APIMart 上游超时", "已暂停批量提交，避免 7 页连续失败；稍后可单页重试或检查任务进度。");
+            break;
+          }
+        }
+        state.deck.visualPlan = state.visualPlan;
+        const generatedCount = state.deck.cards.filter((card, index) => card.generatedImageUrl || pageImageUrl(index)).length;
+        const pendingCount = state.visualPlan.pages.filter(page => page.taskStatus === "processing" || page.taskStatus === "submitted" || page.taskStatus === "timeout").length;
+        state.pipelineOverrides.visual = failures.length
+          ? `部分失败 ${generatedCount}/${state.deck.cards.length}`
+          : deferred.length ? `上游超时 ${generatedCount}/${state.deck.cards.length}`
+          : pendingCount ? `处理中 ${generatedCount}/${state.deck.cards.length}` : "逐页成图";
+        renderPipeline(failures.length || pendingCount || deferred.length ? "visual" : "complete");
+        render();
+        showToast(deferred.length
+          ? "APIMart 上游超时，已暂停批量出图；稍后点单页重试"
+          : failures.length
+          ? `已生成 ${generatedCount} 页，${failures.length} 页失败，可点失败页重试`
+          : pendingCount ? `已生成 ${generatedCount} 页，${pendingCount} 页仍在处理中，可稍后检查进度`
+          : "image2.0 已逐页生成知识卡片");
+      } catch (error) {
+        state.pipelineOverrides.visual = "失败";
+        renderPipeline("visual");
+        showToast(`逐页出图失败：${error.message}`);
+      } finally {
+        setGenerationRunning(false);
+      }
+    }
+
+    function ensureVisualPages() {
+      const existingPages = state.visualPlan?.pages || [];
+      state.visualPlan = {
+        ...(state.visualPlan || {}),
+        source: "image-pages:gpt-image-2",
+        styleName: `${state.deck.brand.hospital} · 逐页知识卡片`,
+        pages: state.deck.cards.map((card, index) => ({
+          ...(existingPages[index] || {}),
+          page: index + 1,
+          title: card.title,
+          taskStatus: (card.generatedImageUrl || pageImageUrl(index)) ? "completed" : (existingPages[index]?.taskStatus || "waiting")
+        }))
+      };
+      state.deck.visualPlan = state.visualPlan;
+      renderVisualPlan();
+      return state.visualPlan;
+    }
+
+    async function generateSingleImagePage(index) {
+      if (state.isGenerating) {
+        showToast("AI 正在生成，请稍等");
+        return;
+      }
+      if (!state.deck) {
+        showToast("请先生成文案草稿");
+        return;
+      }
+      if (!copyReadyForImage()) {
+        showToast("请先确认文案，或等待医生审核通过");
+        return;
+      }
+      setGenerationRunning(true, "image2.0 正在处理单页", `正在处理第 ${index + 1} 页`);
+      state.pipelineOverrides.visual = "进行中";
+      renderPipeline("visual");
+      ensureVisualPages();
+      state.active = index;
+      render();
+      try {
+        if (pageImageUrl(index)) {
+          showToast(`第 ${index + 1} 页已经有成图`);
+          return;
+        }
+        const page = state.visualPlan.pages[index] || {};
+        if (page.taskId && page.taskStatus !== "failed") {
+          await pollVisualPageTask(index, page.taskId, {
+            announce: false,
+            initialDelay: 0,
+            attempts: 4,
+            interval: 5000,
+            onStatus: (title, detail) => updateGenerationStatus(title, detail)
+          });
+        } else {
+          await runVisualPageGeneration(index, {
+            attempts: 10,
+            interval: 5000,
+            onStatus: (title, detail) => updateGenerationStatus(title, detail)
+          });
+        }
+        state.deck.visualPlan = state.visualPlan;
+        const generatedCount = state.deck.cards.filter((card, i) => card.generatedImageUrl || pageImageUrl(i)).length;
+        state.pipelineOverrides.visual = generatedCount === state.deck.cards.length ? "逐页成图" : `已成图 ${generatedCount}/${state.deck.cards.length}`;
+        renderPipeline(generatedCount === state.deck.cards.length ? "complete" : "visual");
+        render();
+        showToast(`第 ${index + 1} 页处理完成`);
+      } catch (error) {
+        const message = cleanErrorMessage(error.message || "未知错误");
+        state.visualPlan.pages[index] = {
+          ...state.visualPlan.pages[index],
+          taskStatus: "failed",
+          error: message
+        };
+        state.deck.visualPlan = state.visualPlan;
+        state.pipelineOverrides.visual = "部分失败";
+        renderPipeline("visual");
+        renderVisualPlan();
+        render();
+        showToast(`第 ${index + 1} 页失败：${message}`);
+      } finally {
+        setGenerationRunning(false);
+      }
+    }
+
+    async function runVisualPageGeneration(index, options = {}) {
+      const announce = options.announce !== false;
+      const shouldPoll = options.poll !== false;
+      const onStatus = typeof options.onStatus === "function" ? options.onStatus : null;
+      const pageNo = index + 1;
+      onStatus?.("image2.0 正在逐页出图", `第 ${pageNo} 页正在提交 GPT-Image-2 任务`);
+      const payload = visualApiPayload(input(), index);
+      const logoReference = await ensureLogoReference();
+      payload.imageModelPlan.referenceImages = logoReference ? [logoReference] : [];
+      payload.imageModelPlan.requireImage = true;
+      if (options.forceLocal) payload.imageModelPlan.forceLocal = true;
+      const response = await fetch("/api/visual-style/generate", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const plan = await response.json();
+      if (!response.ok) throw new Error(plan.detail || plan.error || `HTTP ${response.status}`);
+      state.visualPlan.pages[index] = {
+        ...state.visualPlan.pages[index],
+        ...plan,
+        page: pageNo,
+        title: state.deck.cards[index].title,
+        error: plan.error || plan.fallbackReason || ""
+      };
+      const directImage = plan.referenceImage?.url || plan.resultImages?.[0] || "";
+      if (directImage) state.deck.cards[index].generatedImageUrl = directImage;
+      renderVisualPlan();
+      if (plan.taskStatus === "failed") {
+        throw new Error(plan.error || plan.fallbackReason || `第 ${pageNo} 页 image2.0 任务失败`);
+      }
+      if (plan.taskId && shouldPoll) {
+        onStatus?.("image2.0 任务已提交", `第 ${pageNo} 页任务 ${plan.taskId} 已提交，正在等待出图`);
+        if (announce) showToast(`第 ${pageNo} 页 image2.0 任务已提交`);
+        await pollVisualPageTask(index, plan.taskId, { announce, onStatus, attempts: options.attempts, interval: options.interval });
+      } else if (announce) {
+        showToast(plan.transient ? `第 ${pageNo} 页上游超时，稍后可重试` : plan.configured ? `第 ${pageNo} 页已生成` : "image2.0 未配置，无法生成最终卡片");
+      }
+      if (!plan.taskId && !directImage && plan.transient) {
+        return state.visualPlan;
+      }
+      if (!plan.taskId && !directImage) {
+        throw new Error(plan.fallbackReason || "image2.0 没有返回任务或图片");
+      }
+      return state.visualPlan;
+    }
+
+    async function pollVisualPageTask(index, taskId, options = {}) {
+      const announce = options.announce !== false;
+      const onStatus = typeof options.onStatus === "function" ? options.onStatus : null;
+      const pageNo = index + 1;
+      const initialDelay = Number.isFinite(options.initialDelay) ? options.initialDelay : 10000;
+      const attempts = Number.isFinite(options.attempts) ? options.attempts : 30;
+      const interval = Number.isFinite(options.interval) ? options.interval : 6000;
+      if (initialDelay > 0) await wait(initialDelay);
+      for (let attempt = 0; attempt < attempts; attempt += 1) {
+        const response = await fetch(`/api/visual-style/tasks/${encodeURIComponent(taskId)}`);
+        const task = await response.json();
+        if (!response.ok) throw new Error(task.detail || task.error || `HTTP ${response.status}`);
+        const previous = state.visualPlan.pages[index] || {};
+        const taskError = cleanErrorMessage(task.error || "");
+        state.visualPlan.pages[index] = {
+          ...previous,
+          taskStatus: task.status,
+          progress: task.progress,
+          actualTime: task.actualTime,
+          estimatedTime: task.estimatedTime,
+          cost: task.cost,
+          resultImages: task.images || [],
+          expiresAt: task.expiresAt,
+          referenceImage: task.images?.[0] ? { url: task.images[0] } : previous.referenceImage,
+          fallbackReason: task.status === "completed" ? "" : previous.fallbackReason,
+          error: task.status === "failed" ? taskError || cleanErrorMessage(previous.error) || "任务失败" : taskError || cleanErrorMessage(previous.error) || ""
+        };
+        if (task.images?.[0]) {
+          state.deck.cards[index].generatedImageUrl = task.images[0];
+        }
+        renderVisualPlan();
+        onStatus?.("image2.0 正在出图", `第 ${pageNo} 页：${task.status}｜进度 ${task.progress || 0}%`);
+        if (taskError && /524|上游超时|查询超时|APIMart/.test(taskError)) {
+          render();
+          if (announce) showToast(`第 ${pageNo} 页上游查询超时，稍后检查进度`);
+          return;
+        }
+        if (task.status === "completed") {
+          render();
+          if (announce) showToast(`第 ${pageNo} 页图片已生成`);
+          return;
+        }
+        if (task.status === "failed") {
+          throw new Error(taskError || `第 ${pageNo} 页 image2.0 任务失败`);
+        }
+        await wait(interval);
+      }
+      const previous = state.visualPlan.pages[index] || {};
+      state.visualPlan.pages[index] = {
+        ...previous,
+        taskStatus: previous.taskStatus === "submitted" ? "submitted" : "processing",
+        error: "任务仍在处理中，可稍后检查进度"
+      };
+      renderVisualPlan();
+      render();
+    }
+
+    function renderVisualPlan() {
+      if (!els.visualPlan) return;
+      const plan = state.visualPlan;
+      if (!plan) {
+        els.visualPlan.innerHTML = `
+          <div class="visual-plan-card empty">
+            <b>暂无 image2.0 成图</b>
+            <span>文案确认或医生审核通过后，在发布页点击“image2.0 逐页生成知识卡片”。</span>
+          </div>`;
+        return;
+      }
+      if (Array.isArray(plan.pages)) {
+        const generated = plan.pages.filter((page, index) => page.referenceImage?.url || page.resultImages?.length || state.deck?.cards?.[index]?.generatedImageUrl).length;
+        const failed = plan.pages.filter(page => page.taskStatus === "failed").length;
+        const pending = plan.pages.filter(page => page.taskStatus === "processing" || page.taskStatus === "submitted" || page.taskStatus === "timeout").length;
+        const missing = plan.pages.length - generated;
+        const retryLabel = pending ? "检查任务进度 / 重试失败页" : "重试失败/缺失页";
+        els.visualPlan.innerHTML = `
+          <div class="visual-plan-card">
+            <b>${escapeHtml(plan.styleName || "逐页知识卡片")}</b>
+            <span>${escapeHtml(`共 ${plan.pages.length} 页｜${generated} 页已生成${pending ? `｜${pending} 页处理中` : ""}${failed ? `｜${failed} 页失败` : ""}${missing ? "｜可检查进度或重试" : ""}`)}</span>
+            ${missing ? `<button class="ghost full-button" type="button" data-retry-image-pages>${retryLabel}</button>` : ""}
+          </div>
+          ${plan.pages.map((page, index) => {
+            const imageUrl = pageImageUrl(index);
+            const taskLine = page.taskId
+              ? `任务：${page.taskId}\n状态：${page.taskStatus || "submitted"}${Number.isFinite(page.progress) ? `｜进度 ${page.progress}%` : ""}${page.actualTime ? `｜耗时 ${page.actualTime}s` : ""}`
+              : page.taskStatus || "waiting";
+            const errorLine = cleanErrorMessage(page.error || page.fallbackReason || "");
+            return `
+              <div class="visual-plan-card">
+                <b>${String(index + 1).padStart(2, "0")}｜${escapeHtml(page.title || state.deck?.cards?.[index]?.title || "知识卡片")}</b>
+                <span>${escapeHtml([taskLine, errorLine ? `失败原因：${errorLine}` : ""].filter(Boolean).join("\n"))}</span>
+                ${imageUrl ? `<img class="visual-reference-image" src="${escapeHtml(imageUrl)}" alt="第 ${index + 1} 页 image2.0 成图">` : ""}
+              </div>`;
+          }).join("")}`;
+        return;
+      }
+      const palette = plan.palette || {};
+      const swatches = [palette.primary, palette.secondary, palette.background, palette.ink]
+        .filter(Boolean)
+        .map(color => `<span class="visual-swatch" style="background:${escapeHtml(color)}"></span>`)
+        .join("");
+      const imageUrl = visualImageUrl();
+      const taskLine = plan.taskId
+        ? `任务：${plan.taskId}\n状态：${plan.taskStatus || "submitted"}${Number.isFinite(plan.progress) ? `｜进度 ${plan.progress}%` : ""}${plan.actualTime ? `｜耗时 ${plan.actualTime}s` : ""}`
+        : plan.fallbackReason || plan.source || "image2.0 视觉方案";
+      const requestLine = plan.imageRequest
+        ? `请求：${plan.imageRequest.size || "3:4"}｜${plan.imageRequest.resolution || "1k"}｜${plan.adapter || ""}`
+        : "";
+      els.visualPlan.innerHTML = `
+        <div class="visual-plan-card">
+          <b>${escapeHtml(plan.styleName || "视觉方案")}</b>
+          <span>${escapeHtml([taskLine, requestLine].filter(Boolean).join("\n"))}</span>
+          <div class="visual-swatches">${swatches}</div>
+          ${imageUrl ? `<img class="visual-reference-image" src="${escapeHtml(imageUrl)}" alt="image2.0 生成的视觉参考图">` : ""}
+        </div>
+        <div class="visual-plan-card">
+          <b>构图规则</b>
+          <span>${escapeHtml((plan.composition || []).join("\n"))}</span>
+        </div>
+        <div class="visual-plan-card">
+          <b>模型分工</b>
+          <span>${escapeHtml((plan.assetPlan || []).join("\n"))}</span>
+        </div>`;
+    }
+
+    function openAiConfigPanel() {
+      document.querySelectorAll(".tab").forEach(item => item.classList.remove("active"));
+      document.querySelectorAll(".tab-panel").forEach(panel => panel.hidden = true);
+      const apiTab = document.querySelector(`.tab[data-tab="api"]`);
+      apiTab.classList.add("active");
+      state.activeTab = "api";
+      document.querySelector("#panel-api").hidden = false;
+      refreshApiHealth();
+    }
+
+    async function initReviewMode(id) {
+      const record = await fetchReviewRecord(id) || getReviewRecord(id);
+      els.app.hidden = true;
+      els.reviewApp.hidden = false;
+      if (!record) {
+        els.reviewTitle.textContent = "审核链接不存在";
+        els.reviewMeta.textContent = "请联系运营重新生成链接。";
+        els.reviewCards.innerHTML = `<div class="meta-box"><p>没有找到这篇笔记的审核记录。</p></div>`;
+        return;
+      }
+      state.deck = structuredClone(record.deck);
+      state.visualPlan = record.visualPlan || record.deck.visualPlan || null;
+      state.style = record.style || "doctor";
+      state.active = 0;
+      els.reviewTitle.textContent = state.deck.title;
+      els.reviewMeta.textContent = `${state.deck.brand.hospital}｜${state.deck.cards.length} 张卡片｜创建于 ${formatDate(record.createdAt)}`;
+      renderReviewStatus(record.status);
+      els.reviewerName.value = record.reviewer || "";
+      els.reviewOverall.value = record.overall || "";
+      els.reviewCards.innerHTML = state.deck.cards.map((card, index) => `
+        <article class="review-card">
+          <img alt="第 ${index + 1} 张卡片预览" id="reviewImage${index}">
+          <h3>${String(index + 1).padStart(2, "0")}｜${escapeHtml(card.title)}</h3>
+          <label for="reviewComment${index}">本页批注</label>
+          <textarea id="reviewComment${index}" data-review-comment="${index}" placeholder="这页是否专业、是否需要修改？">${escapeHtml(record.comments?.[index] || "")}</textarea>
+        </article>
+      `).join("");
+      for (let i = 0; i < state.deck.cards.length; i += 1) {
+        const canvas = await canvasForCard(state.deck.cards[i], i);
+        const image = document.querySelector(`#reviewImage${i}`);
+        if (image) image.src = canvas.toDataURL("image/png");
+      }
+    }
+
+    function renderReviewStatus(status) {
+      els.reviewStatus.textContent = reviewStatusLabel(status);
+      els.reviewStatus.className = `review-status ${status === "approved" ? "approved" : status === "changes" ? "changes" : ""}`;
+    }
+
+    async function submitReview(status) {
+      const id = new URLSearchParams(location.search).get("review");
+      const record = await fetchReviewRecord(id) || getReviewRecord(id);
+      if (!record) return;
+      const comments = {};
+      document.querySelectorAll("[data-review-comment]").forEach(item => {
+        comments[item.dataset.reviewComment] = item.value.trim();
+      });
+      const saved = await submitReviewRecord(id, {
+        status,
+        reviewer: els.reviewerName.value.trim() || "未署名医生",
+        overall: els.reviewOverall.value.trim(),
+        comments
+      });
+      renderReviewStatus(saved.status);
+      showToast(saved.status === "approved" ? "已提交审核通过" : "已提交需修改意见");
+    }
+
+    function pageLabel(card, index) {
+      if (index === 0) return "封面";
+      return {
+        checklist: "清单",
+        symptom_map: "观察",
+        clinic_tip: "医生建议",
+        mistake: "避坑",
+        warning: "提醒",
+        summary: "总结",
+        timeline: "时间轴",
+        report: "检查"
+      }[card.layout] || card.label;
+    }
+
+    function riskLabel(level) {
+      return {
+        high: "高风险",
+        medium: "提醒",
+        low: "普通"
+      }[level] || "普通";
+    }
+
+    async function generate() {
+      if (state.isGenerating) {
+        showToast("AI 正在生成，请稍等");
+        return;
+      }
+      setGenerationRunning(true, "DeepSeek 正在生成文案", "正在准备选题、医院品牌和内容结构");
+      state.pipelineOverrides = {};
+      state.copyApproved = false;
+      let copySource = "";
+      try {
+        const steps = [
+          ["strategy", "正在做选题策划"],
+          ["copy", "正在准备文案生成"],
+          ["approval", "等待文案确认"]
+        ];
+        for (const [step, detail] of steps) {
+          renderPipeline(step);
+          updateGenerationStatus("AI 正在生成", detail);
+          await wait(180);
+        }
+        const data = input();
+        if (isDeepSeekMode(data.generationMode)) {
+          try {
+            updateGenerationStatus("DeepSeek 正在生成文案", "模型返回可能需要 30-90 秒，请不要关闭页面");
+            state.deck = await generateWithApi(data);
+            updateGenerationStatus("正在合成知识卡片", "DeepSeek 文案已返回，正在进行稳定排版和合规检查");
+            await wait(180);
+            copySource = state.deck.source;
+            state.pipelineOverrides.copy = "DeepSeek";
+          } catch (error) {
+            updateGenerationStatus("DeepSeek 调用失败", "正在自动使用本地兜底文案，继续完成卡片生成");
+            await wait(180);
+            state.deck = buildCards(data);
+            copySource = "local-api-mock";
+            state.pipelineOverrides.copy = "本地回退";
+          }
+        } else {
+          updateGenerationStatus("正在生成本地草稿", "正在用本地结构化引擎生成卡片内容");
+          await wait(240);
+          state.deck = buildCards(data);
+          copySource = state.deck.source;
+          state.pipelineOverrides.copy = "本地文案";
+        }
+        state.active = 0;
+        state.visualPlan = null;
+        state.deck.visualPlan = null;
+        state.deck.cards.forEach(card => delete card.generatedImageUrl);
+        state.originalCards = structuredClone(state.deck.cards);
+        state.pipelineOverrides.approval = "待确认";
+        renderPipeline("approval");
+        updateGenerationStatus("正在刷新文案草稿", "文案已生成，正在更新编辑区和发布包");
+        render();
+        showToast(`${generationToast(copySource)}，请先确认文案`);
+      } finally {
+        setGenerationRunning(false);
+      }
+    }
+
+    async function generateWithApi(data) {
+      const payload = apiPayload(data);
+      const response = await fetch("/api/xhs-notes/generate", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) {
+        throw new Error(`API ${response.status}`);
+      }
+      const note = await response.json();
+      return deckFromApi(note, data);
+    }
+
+    function apiPayload(data) {
+      return {
+        topic: data.topic,
+        pet: data.pet,
+        contentType: data.type,
+        audience: data.audience,
+        conversionGoal: data.cta,
+        sceneStyle: state.style,
+        generationMode: data.generationMode,
+        hospitalProfile: data.hospitalProfile,
+        brand: {
+          hospital: data.hospital,
+          doctor: data.doctor,
+          phone: data.phone,
+          address: data.address,
+          primaryColor: data.primaryColor,
+          secondaryColor: data.secondaryColor,
+          mood: data.brandMood,
+          hasLogo: Boolean(data.logo)
+        },
+        visual: currentVisualTemplate(),
+        visualPlan: state.visualPlan,
+        imageModelPlan: {
+          model: els.imageModel.value.trim() || "gpt-image-2",
+          size: els.imageSize.value || "3:4",
+          resolution: els.imageResolution.value || "1k",
+          promptBase: els.visualPrompt.value.trim(),
+          referenceImages: [],
+          role: "generate_final_single_page_knowledge_card"
+        },
+        output: {
+          cardCount: 7,
+          format: "xhs_3_4_png",
+          requireComplianceReview: true,
+          requireStructuredJson: true
+        }
+      };
+    }
+
+    function visualApiPayload(data, pageIndex = state.active) {
+      const payload = apiPayload(data);
+      if (state.deck) {
+        const current = state.deck.cards[pageIndex] || state.deck.cards[state.active] || state.deck.cards[0];
+        payload.generatedNote = {
+          title: state.deck.title,
+          issue: state.deck.issue,
+          caption: state.deck.caption,
+          currentPage: pageIndex + 1,
+          currentCard: current ? {
+            page: pageIndex + 1,
+            label: current.label,
+            title: current.title,
+            subtitle: current.subtitle,
+            points: current.points,
+            insight: current.insight,
+            formula: current.formula,
+            doctorNote: current.note,
+            riskLevel: current.riskLevel,
+            layout: current.layout
+          } : null,
+          cards: state.deck.cards.map((card, index) => ({
+            page: index + 1,
+            label: card.label,
+            title: card.title,
+            subtitle: card.subtitle,
+            points: card.points,
+            doctorNote: card.note,
+            riskLevel: card.riskLevel
+          }))
+        };
+      }
+      return payload;
+    }
+
+    function deckFromApi(note, data) {
+      const issue = inferIssue(data.topic, data.pet);
+      const cards = (note.cards || []).map((card, index) => ({
+        id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${index}`,
+        label: card.label || `第 ${index + 1} 页`,
+        title: card.title || "",
+        subtitle: card.subtitle || "",
+        points: enrichPoints(card.points || [], card.layout || layoutFor(index, data.type), issue),
+        note: card.doctorNote || "",
+        insight: card.insight || card.clinicalLogic || "",
+        formula: card.formula || "",
+        layout: card.layout || layoutFor(index, data.type),
+        riskLevel: card.riskLevel || "low"
+      }));
+      const fallback = buildCards(data);
+      return {
+        ...fallback,
+        source: note.source || "api",
+        fallbackReason: note.fallbackReason || "",
+        title: note.noteTitle || fallback.title,
+        issue,
+        cards: cards.length ? cards : fallback.cards,
+        titles: note.titles || fallback.titles,
+        caption: note.caption || fallback.caption,
+        tags: note.hashtags || fallback.tags,
+        strategy: {
+          ...fallback.strategy,
+          generationMode: data.generationMode,
+          risk: cards.some(card => card.riskLevel === "high") ? "高风险提醒型" : fallback.strategy.risk
+        },
+        publishPack: [
+          ...buildPublishPack(data, cards.length ? cards : fallback.cards),
+          { name: "生成来源", value: generationSourceLabel(note.source || "api") },
+          ...(note.fallbackReason ? [{ name: "失败原因", value: cleanErrorMessage(note.fallbackReason) }] : [])
+        ]
+      };
+    }
+
+    function generationSourceLabel(source) {
+      const text = String(source || "");
+      if (text.startsWith("text-model:")) return `DeepSeek 文案模型：${text.replace("text-model:", "")}`;
+      if (text === "local-api-mock") return "DeepSeek 未返回可用结果，已自动使用本地兜底文案";
+      if (text === "local-ui-engine") return "本地兜底文案";
+      if (text === "api") return "本机代理接口";
+      return text;
+    }
+
+    function generationToast(source) {
+      const text = String(source || "");
+      if (text.startsWith("text-model:")) return "已通过 DeepSeek 生成文案，并完成稳定排版";
+      if (text === "local-api-mock") return "DeepSeek 未返回可用结果，已自动使用本地兜底";
+      return "已通过本机代理接口生成图文笔记";
+    }
+
+    function finalGenerationToast(source, visualStatus) {
+      const text = String(source || "");
+      const copy = text.startsWith("text-model:") ? "DeepSeek 文案" : "本地文案";
+      if (/失败/.test(visualStatus || "")) return `${copy}已完成；${visualStatus}`;
+      if (/未配置|本地视觉方案/.test(visualStatus || "")) return `${copy}已完成；${visualStatus}`;
+      return `${copy} + image2.0 视觉已完成`;
+    }
+
+    function modeStatus(mode, source = state.deck?.source) {
+      if (String(source || "").startsWith("text-model:")) {
+        return `${generationSourceLabel(source)}；文案确认或医生审核通过后，由 image2.0 逐页生成最终知识卡片。`;
+      }
+      if (state.deck?.fallbackReason) {
+        return `DeepSeek 暂不可用：${cleanErrorMessage(state.deck.fallbackReason)} 当前已使用本地兜底文案，可稍后重试。`;
+      }
+      return "当前流程：DeepSeek 生成文案草稿，文案确认/医生审核后由 image2.0 出图；DeepSeek 不可用时自动本地兜底。";
+    }
+
+    function applyEdit() {
+      const card = state.deck.cards[state.active];
+      card.title = els.cardTitle.value.trim() || card.title;
+      card.subtitle = els.cardSubtitle.value.trim() || card.subtitle;
+      card.points = els.cardPoints.value.split("\n").map(item => item.trim()).filter(Boolean).slice(0, 5);
+      card.note = els.cardNote.value.trim() || card.note;
+      markCopyChanged();
+      render();
+      showToast("当前页已更新");
+    }
+
+    function rewriteCard() {
+      const card = state.deck.cards[state.active];
+      const issue = state.deck.issue;
+      const variants = [
+        {
+          title: `${issue}时，先看这几个信号`,
+          subtitle: "宠主先做判断，不要急着靠经验处理。",
+          points: ["精神状态有没有变差", "症状是否反复出现", "是否伴随疼痛或异常排泄", "近期是否换粮、外出或误食"],
+          note: "拿不准时，建议让医生结合检查评估。"
+        },
+        {
+          title: `医生更关心这 4 个细节`,
+          subtitle: "把信息记录清楚，问诊效率会高很多。",
+          points: ["第一次出现的时间", "一天内出现的次数", "精神食欲变化", "照片、视频或可疑物品"],
+          note: "这些信息能帮助医生判断风险等级。"
+        }
+      ];
+      const next = variants[state.active % variants.length];
+      Object.assign(card, next);
+      markCopyChanged();
+      render();
+      showToast("已按小红书科普语气重写本页");
+    }
+
+    function compressCard() {
+      const card = state.deck.cards[state.active];
+      card.title = trimText(card.title, 18);
+      card.subtitle = trimText(card.subtitle, 28);
+      card.points = card.points.map(point => trimText(point, 20));
+      card.note = trimText(card.note, 28);
+      markCopyChanged();
+      render();
+      showToast("已压缩当前页文案");
+    }
+
+    function restoreCard() {
+      state.deck.cards[state.active] = structuredClone(state.originalCards[state.active]);
+      markCopyChanged();
+      render();
+      showToast("已恢复当前页");
+    }
+
+    function autoFix() {
+      state.deck.cards.forEach(card => {
+        card.title = card.title.replace(/一定是|就是/g, "可能是").replace(/包治|根治|立刻好|保证/g, "需评估");
+        card.subtitle = card.subtitle.replace(/一定是|就是/g, "可能是");
+        card.points = card.points.map(point => point.replace(/自行喂药/g, "自行用药").replace(/人用药/g, "人用药"));
+        if (!/医生|就医|到院|检查|面诊/.test(card.note)) {
+          card.note += " 建议结合面诊和检查结果判断。";
+        }
+      });
+      markCopyChanged();
+      render();
+      showToast("已完成合规改写");
+    }
+
+    function saveBrand() {
+      const data = input();
+      localStorage.setItem("chengcheng-pet-brand", JSON.stringify({
+        hospital: data.hospital,
+        doctor: data.doctor,
+        phone: data.phone,
+        address: data.address,
+        hospitalPositioning: data.hospitalProfile.positioning,
+        serviceFocus: data.hospitalProfile.services,
+        localAudience: data.hospitalProfile.localAudience,
+        contentStyleGuide: data.hospitalProfile.contentStyleGuide,
+        primaryColor: data.primaryColor,
+        secondaryColor: data.secondaryColor,
+        brandMood: data.brandMood,
+        logo: data.logo,
+        logoReference: state.brandLogoReference,
+        visualPrompt: els.visualPrompt.value.trim(),
+        imageSize: els.imageSize.value,
+        imageResolution: els.imageResolution.value
+      }));
+      showToast("品牌档案已保存");
+    }
+
+    function draftKey() {
+      return "chengcheng-pet-drafts";
+    }
+
+    function loadDrafts() {
+      try {
+        return JSON.parse(localStorage.getItem(draftKey()) || "[]");
+      } catch {
+        return [];
+      }
+    }
+
+    function writeDrafts(drafts) {
+      localStorage.setItem(draftKey(), JSON.stringify(drafts.slice(0, 20)));
+    }
+
+    function saveDraft() {
+      const drafts = loadDrafts();
+      const now = new Date();
+      state.deck.visualPlan = state.visualPlan;
+      const draft = {
+        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+        savedAt: now.toISOString(),
+        title: state.deck.title,
+        topic: state.deck.topic,
+        style: state.style,
+        active: state.active,
+        copyApproved: state.copyApproved,
+        deck: structuredClone(state.deck)
+      };
+      writeDrafts([draft, ...drafts]);
+      renderDrafts();
+      showToast("已保存到草稿库");
+    }
+
+    function loadDraft(id) {
+      const draft = loadDrafts().find(item => item.id === id);
+      if (!draft) return;
+      state.deck = structuredClone(draft.deck);
+      state.visualPlan = state.deck.visualPlan || null;
+      state.copyApproved = Boolean(draft.copyApproved);
+      state.style = draft.style || state.style;
+      state.active = draft.active || 0;
+      state.originalCards = structuredClone(state.deck.cards);
+      selectStyle(state.style);
+      renderVisualPlan();
+      render();
+      showToast("已加载草稿");
+    }
+
+    function deleteDraft(id) {
+      writeDrafts(loadDrafts().filter(item => item.id !== id));
+      renderDrafts();
+      showToast("草稿已删除");
+    }
+
+    function renderDrafts() {
+      const drafts = loadDrafts();
+      if (!drafts.length) {
+        els.draftList.innerHTML = `<div class="meta-box"><p>暂无草稿。生成笔记后可在发布页保存。</p></div>`;
+        return;
+      }
+      els.draftList.innerHTML = drafts.map(draft => `
+        <div class="draft-item">
+          <strong>${escapeHtml(draft.title || "未命名草稿")}</strong>
+          <span>${escapeHtml(draft.topic || "")}<br>${escapeHtml(formatDate(draft.savedAt))}</span>
+          <div class="button-row">
+            <button class="ghost" type="button" data-load-draft="${draft.id}">加载</button>
+            <button class="danger" type="button" data-delete-draft="${draft.id}">删除</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function formatDate(value) {
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "";
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+    }
+
+    function reviewKey() {
+      return "chengcheng-review-requests";
+    }
+
+    function loadLocalReviews() {
+      try {
+        return JSON.parse(localStorage.getItem(reviewKey()) || "[]");
+      } catch {
+        return [];
+      }
+    }
+
+    function writeLocalReviews(reviews) {
+      localStorage.setItem(reviewKey(), JSON.stringify(reviews.slice(0, 50)));
+    }
+
+    function getReviewRecord(id) {
+      return loadLocalReviews().find(item => item.id === id);
+    }
+
+    function upsertLocalReviewRecord(record) {
+      if (!record?.id) return;
+      const reviews = loadLocalReviews();
+      const index = reviews.findIndex(item => item.id === record.id);
+      if (index >= 0) reviews[index] = record;
+      else reviews.unshift(record);
+      writeLocalReviews(reviews);
+    }
+
+    async function reviewApi(path, options = {}) {
+      const response = await fetch(path, {
+        ...options,
+        headers: {
+          "content-type": "application/json",
+          ...(options.headers || {})
+        }
+      });
+      if (response.status === 404) return null;
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || data.error || `HTTP ${response.status}`);
+      return data;
+    }
+
+    async function fetchReviewRecord(id) {
+      if (!id) return null;
+      try {
+        const data = await reviewApi(`/api/reviews/${encodeURIComponent(id)}`);
+        if (data?.review) upsertLocalReviewRecord(data.review);
+        return data?.review || null;
+      } catch {
+        return null;
+      }
+    }
+
+    async function saveReviewRecord(record) {
+      upsertLocalReviewRecord(record);
+      try {
+        const data = await reviewApi("/api/reviews", {
+          method: "POST",
+          body: JSON.stringify(record)
+        });
+        if (data?.review) upsertLocalReviewRecord(data.review);
+        return data?.review || record;
+      } catch {
+        return record;
+      }
+    }
+
+    async function submitReviewRecord(id, payload) {
+      const fallback = {
+        ...(getReviewRecord(id) || {}),
+        ...payload,
+        id,
+        submittedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      upsertLocalReviewRecord(fallback);
+      try {
+        const data = await reviewApi(`/api/reviews/${encodeURIComponent(id)}/submit`, {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+        if (data?.review) upsertLocalReviewRecord(data.review);
+        return data?.review || fallback;
+      } catch {
+        return fallback;
+      }
+    }
+
+    function reviewLink(id) {
+      return `${location.origin}${location.pathname}?review=${encodeURIComponent(id)}`;
+    }
+
+    function reviewStatusLabel(status) {
+      return {
+        pending: "待医生审核",
+        approved: "审核通过",
+        changes: "需修改"
+      }[status] || "待医生审核";
+    }
+
+    async function createReviewLink() {
+      const id = state.deck.reviewId || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
+      state.deck.reviewId = id;
+      await ensureLogoReference();
+      state.deck.visualPlan = state.visualPlan;
+      if (state.deck.brand) state.deck.brand.logo = state.brandLogo;
+      const existing = await fetchReviewRecord(id) || getReviewRecord(id);
+      const record = {
+        ...(existing || {}),
+        id,
+        status: "pending",
+        reviewer: "",
+        overall: "",
+        comments: {},
+        deck: structuredClone(state.deck),
+        visualPlan: state.visualPlan,
+        style: state.style,
+        updatedAt: new Date().toISOString()
+      };
+      if (!record.createdAt) record.createdAt = new Date().toISOString();
+      const saved = await saveReviewRecord(record);
+      state.deck.reviewId = saved.id;
+      state.pipelineOverrides.review = "待审核";
+      renderPipeline("review");
+      renderPublish();
+      const link = reviewLink(saved.id);
+      try {
+        await navigator.clipboard.writeText(link);
+        showToast("审核链接已生成并复制");
+      } catch {
+        showToast("审核链接已生成");
+      }
+    }
+
+    async function copyReviewLink() {
+      if (!state.deck.reviewId) {
+        showToast("请先生成医生审核链接");
+        return;
+      }
+      const link = reviewLink(state.deck.reviewId);
+      try {
+        await navigator.clipboard.writeText(link);
+        showToast("审核链接已复制");
+      } catch {
+        showToast("浏览器未允许复制，请手动选中链接");
+      }
+    }
+
+    async function refreshReviewStatus() {
+      if (!state.deck.reviewId) {
+        showToast("还没有医生审核链接");
+        return;
+      }
+      await fetchReviewRecord(state.deck.reviewId);
+      const record = getReviewRecord(state.deck.reviewId);
+      if (record?.status === "approved") {
+        renderPipeline("visual");
+        render();
+      } else {
+        renderPublish();
+        if (record?.status === "changes") renderPipeline("review");
+      }
+      showToast(record ? `当前状态：${reviewStatusLabel(record.status)}` : "审核记录已不存在");
+    }
+
+    function loadBrand() {
+      const raw = localStorage.getItem("chengcheng-pet-brand");
+      if (!raw) return;
+      try {
+        const data = JSON.parse(raw);
+        els.hospital.value = data.hospital || els.hospital.value;
+        els.doctor.value = data.doctor || els.doctor.value;
+        els.phone.value = data.phone || els.phone.value;
+        els.address.value = data.address || els.address.value;
+        els.hospitalPositioning.value = data.hospitalPositioning || els.hospitalPositioning.value;
+        els.serviceFocus.value = data.serviceFocus || els.serviceFocus.value;
+        els.localAudience.value = data.localAudience || els.localAudience.value;
+        els.contentStyleGuide.value = data.contentStyleGuide || els.contentStyleGuide.value;
+        setColorPair("primary", data.primaryColor || els.primaryColor.value);
+        setColorPair("secondary", data.secondaryColor || els.secondaryColor.value);
+        els.brandMood.value = data.brandMood || els.brandMood.value;
+        if (data.visualPrompt) els.visualPrompt.value = data.visualPrompt;
+        if (data.imageSize) els.imageSize.value = data.imageSize;
+        if (data.imageResolution) els.imageResolution.value = data.imageResolution;
+        state.brandLogo = data.logo || "";
+        state.brandLogoReference = data.logoReference || "";
+        renderLogoPreview();
+      } catch {}
+    }
+
+    function exportJson() {
+      state.deck.visualPlan = state.visualPlan;
+      const blob = new Blob([JSON.stringify(state.deck, null, 2)], { type: "application/json" });
+      downloadBlob(blob, "chengcheng-xhs-note.json");
+      showToast("结构化 JSON 已导出");
+    }
+
+    async function copyCaption() {
+      const text = `${state.deck.titles[0]}\n\n${state.deck.caption}\n\n${state.deck.tags.map(tag => "#" + tag).join(" ")}`;
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast("正文和标签已复制");
+      } catch {
+        showToast("浏览器暂不允许复制，可手动选中文案");
+      }
+    }
+
+    async function exportCurrentCard() {
+      const blob = (await canvasForCard(state.deck.cards[state.active], state.active)).toDataURL("image/png");
+      downloadDataUrl(blob, `chengcheng-card-${state.active + 1}.png`);
+      showToast("当前卡片 PNG 已导出");
+    }
+
+    async function exportAllCards() {
+      const original = state.active;
+      for (let i = 0; i < state.deck.cards.length; i += 1) {
+        state.active = i;
+        render();
+        downloadDataUrl((await canvasForCard(state.deck.cards[i], i)).toDataURL("image/png"), `chengcheng-card-${i + 1}.png`);
+        await wait(120);
+      }
+      state.active = original;
+      render();
+      showToast("已批量导出全部卡片");
+    }
+
+    async function exportPublishZip() {
+      const files = [];
+      for (let i = 0; i < state.deck.cards.length; i += 1) {
+        const canvas = await canvasForCard(state.deck.cards[i], i);
+        files.push({
+          name: `cards/${String(i + 1).padStart(2, "0")}-${safeFileName(state.deck.cards[i].label || "card")}.png`,
+          data: dataUrlToBytes(canvas.toDataURL("image/png"))
+        });
+      }
+      files.push({ name: "caption.txt", data: utf8Bytes(state.deck.caption) });
+      files.push({ name: "hashtags.txt", data: utf8Bytes(state.deck.tags.map(tag => `#${tag}`).join(" ")) });
+      files.push({ name: "titles.txt", data: utf8Bytes(state.deck.titles.map((title, i) => `${i + 1}. ${title}`).join("\n")) });
+      files.push({ name: "audit.json", data: utf8Bytes(JSON.stringify(state.deck.audit, null, 2)) });
+      files.push({ name: "quality-check.json", data: utf8Bytes(JSON.stringify(qualityChecks(state.deck), null, 2)) });
+      files.push({ name: "deck.json", data: utf8Bytes(JSON.stringify(state.deck, null, 2)) });
+      downloadBlob(createZip(files), `chengcheng-xhs-${safeFileName(state.deck.issue)}.zip`);
+      const hasWarnings = qualityChecks(state.deck).some(item => item.level !== "pass");
+      showToast(hasWarnings ? "发布 ZIP 已导出，内含质检提醒" : "发布 ZIP 已导出");
+    }
+
+    async function exportReviewPdf() {
+      const pages = [await reviewSummaryCanvas()];
+      for (let i = 0; i < state.deck.cards.length; i += 1) {
+        pages.push(await reviewCardCanvas(state.deck.cards[i], i));
+      }
+      const pdf = await pdfFromCanvases(pages);
+      downloadBlob(pdf, `chengcheng-review-${safeFileName(state.deck.issue)}.pdf`);
+      showToast("审核版 PDF 已导出");
+    }
+
+    async function reviewSummaryCanvas() {
+      const canvas = document.createElement("canvas");
+      canvas.width = 1240;
+      canvas.height = 1754;
+      const ctx = canvas.getContext("2d");
+      const contentBottom = 1350;
+      drawReviewBackground(ctx, canvas);
+      ctx.fillStyle = "#17211f";
+      ctx.font = "900 56px PingFang SC, Microsoft YaHei, sans-serif";
+      ctx.fillText("小红书图文审核单", 72, 105);
+      ctx.font = "800 34px PingFang SC, Microsoft YaHei, sans-serif";
+      ctx.fillText(state.deck.title, 72, 170);
+      ctx.fillStyle = "#65716d";
+      ctx.font = "700 24px PingFang SC, Microsoft YaHei, sans-serif";
+      ctx.fillText(`${state.deck.brand.hospital}｜${state.deck.brand.doctor || "宠物医生"}｜${state.deck.cards.length} 张卡片`, 72, 214);
+
+      let y = drawReviewSection(ctx, "备选标题", state.deck.titles.map((title, i) => `${i + 1}. ${title}`).join("\n"), 72, 295, 520);
+      y = drawReviewSection(ctx, "正文 Caption", state.deck.caption, 72, y + 28, 520);
+      drawReviewSection(ctx, "推荐标签", state.deck.tags.map(tag => `#${tag}`).join(" "), 72, y + 28, 520);
+
+      let rightY = 295;
+      rightY = drawReviewSection(ctx, "发布前检查", qualityChecks(state.deck).map(item => `${item.level.toUpperCase()}｜${item.title}：${item.message}`).join("\n"), 660, rightY, 500);
+      rightY = drawReviewSection(ctx, "合规提示", state.deck.audit.notes.join("\n"), 660, rightY + 28, 500);
+      drawReviewBox(ctx, "医生审核意见", 660, rightY + 28, 500, 360);
+      return canvas;
+    }
+
+    async function reviewCardCanvas(card, index) {
+      const canvas = document.createElement("canvas");
+      canvas.width = 1240;
+      canvas.height = 1754;
+      const ctx = canvas.getContext("2d");
+      drawReviewBackground(ctx, canvas);
+      ctx.fillStyle = "#17211f";
+      ctx.font = "900 48px PingFang SC, Microsoft YaHei, sans-serif";
+      ctx.fillText(`第 ${index + 1} 张｜${card.label}`, 72, 100);
+      ctx.fillStyle = "#65716d";
+      ctx.font = "700 24px PingFang SC, Microsoft YaHei, sans-serif";
+      ctx.fillText(`${pageLabel(card, index)}｜${riskLabel(card.riskLevel)}｜${state.deck.brand.hospital}`, 72, 142);
+
+      const cardCanvas = await canvasForCard(card, index);
+      ctx.fillStyle = "#fff";
+      roundedRect(ctx, 72, 205, 470, 626, 12);
+      ctx.fill();
+      ctx.drawImage(cardCanvas, 86, 219, 442, 590);
+
+      let y = drawReviewSection(ctx, "卡片文案", `${card.title}\n\n${card.subtitle}\n\n${card.points.map((point, i) => `${i + 1}. ${point}`).join("\n")}\n\n医生提示：${card.note}`, 590, 210, 560);
+      drawReviewBox(ctx, "医生审核意见", 590, y + 24, 560, 330);
+      drawReviewBox(ctx, "修改记录", 72, 900, 1088, 360);
+      return canvas;
+    }
+
+    function drawReviewBackground(ctx, canvas) {
+      ctx.fillStyle = "#f7faf8";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#ffffff";
+      roundedRect(ctx, 42, 42, canvas.width - 84, canvas.height - 84, 18);
+      ctx.fill();
+      ctx.strokeStyle = "#dfe8e4";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    function drawReviewSection(ctx, title, text, x, y, width) {
+      ctx.fillStyle = "#18835f";
+      ctx.font = "900 28px PingFang SC, Microsoft YaHei, sans-serif";
+      ctx.fillText(title, x, y);
+      ctx.fillStyle = "#30413c";
+      ctx.font = "700 22px PingFang SC, Microsoft YaHei, sans-serif";
+      return canvasWrapText(ctx, text, x, y + 42, width, 34, 14);
+    }
+
+    function drawReviewBox(ctx, title, x, y, width, height) {
+      ctx.fillStyle = "#18835f";
+      ctx.font = "900 28px PingFang SC, Microsoft YaHei, sans-serif";
+      ctx.fillText(title, x, y);
+      ctx.strokeStyle = "#cfded8";
+      ctx.lineWidth = 2;
+      roundedRect(ctx, x, y + 24, width, height, 10);
+      ctx.stroke();
+      ctx.strokeStyle = "#e4eeea";
+      for (let lineY = y + 88; lineY < y + height + 18; lineY += 54) {
+        ctx.beginPath();
+        ctx.moveTo(x + 24, lineY);
+        ctx.lineTo(x + width - 24, lineY);
+        ctx.stroke();
+      }
+    }
+
+    function applyBrandTheme(brand) {
+      const palette = brandPalette(brand);
+      els.card.style.setProperty("--brand-bg", palette[0]);
+      els.card.style.setProperty("--brand-ink", palette[1]);
+      els.card.style.setProperty("--brand-primary", palette[2]);
+      els.card.style.setProperty("--brand-soft", palette[3]);
+      els.card.style.setProperty("--brand-secondary", palette[4]);
+      els.card.style.setProperty("--brand-radius", `${moodRadius(brand.mood)}px`);
+    }
+
+    function brandPalette(brand) {
+      const primary = normalizeHex(brand.primaryColor) || "#18835f";
+      const secondary = normalizeHex(brand.secondaryColor) || "#72b7df";
+      const mood = brand.mood || "专业可信";
+      const scene = {
+        doctor: { bg: "#f8fffb", ink: "#15352c", bias: "#2e9a74", second: "#72b7df", brandMix: .08, softMix: .18 },
+        warm: { bg: "#fff6e8", ink: "#382717", bias: "#df8f29", second: "#e76d7c", brandMix: .05, softMix: .25 },
+        alert: { bg: "#fff7f4", ink: "#351b1d", bias: "#d9485f", second: "#e8a13a", brandMix: .03, softMix: .32 },
+        report: { bg: "#f5f9ff", ink: "#17283b", bias: "#4477b9", second: "#64b6ac", brandMix: .05, softMix: .2 },
+        cute: { bg: "#fffdf2", ink: "#312818", bias: "#ef8f45", second: "#eb6f96", brandMix: .04, softMix: .3 },
+        premium: { bg: "#fbfcfb", ink: "#151d1b", bias: "#1f5f4e", second: "#b89d62", brandMix: .02, softMix: .12 }
+      }[state.style] || { bg: "#f8fffb", ink: "#15352c", bias: "#2e9a74", second: "#72b7df", brandMix: .08, softMix: .18 };
+      const moodBg = {
+        "专业可信": "#f8fffb",
+        "温柔亲切": "#fff9ef",
+        "年轻活泼": "#fbfff4",
+        "高端简洁": "#fbfcfb",
+        "社区友好": "#fff8f0",
+        "连锁标准化": "#f7fbff"
+      }[mood] || scene.bg;
+      const bg = mixHex(mixHex(scene.bg, moodBg, .25), primary, scene.brandMix);
+      const ink = state.style === "premium" || mood === "高端简洁" ? scene.ink : mixHex(scene.ink, primary, .12);
+      const accent = state.style === "alert" ? mixHex(scene.bias, primary, .18) : mixHex(scene.bias, primary, .28);
+      const accent2 = mixHex(scene.second, secondary, .38);
+      const soft = mixHex(bg, accent, mood === "年轻活泼" ? scene.softMix + .08 : scene.softMix);
+      return [bg, ink, accent, soft, accent2];
+    }
+
+    function moodRadius(mood) {
+      return {
+        "专业可信": 8,
+        "温柔亲切": 12,
+        "年轻活泼": 14,
+        "高端简洁": 4,
+        "社区友好": 10,
+        "连锁标准化": 6
+      }[mood] || 8;
+    }
+
+    function normalizeHex(value) {
+      const text = String(value || "").trim();
+      if (/^#[0-9a-fA-F]{6}$/.test(text)) return text.toLowerCase();
+      if (/^[0-9a-fA-F]{6}$/.test(text)) return `#${text.toLowerCase()}`;
+      return "";
+    }
+
+    function hexToRgb(hex) {
+      const clean = normalizeHex(hex).slice(1);
+      return [
+        parseInt(clean.slice(0, 2), 16),
+        parseInt(clean.slice(2, 4), 16),
+        parseInt(clean.slice(4, 6), 16)
+      ];
+    }
+
+    function rgbToHex(rgb) {
+      return `#${rgb.map(value => Math.max(0, Math.min(255, Math.round(value))).toString(16).padStart(2, "0")).join("")}`;
+    }
+
+    function rgbToHsl(rgb) {
+      const [r, g, b] = rgb.map(value => value / 255);
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      let h = 0;
+      let s = 0;
+      const l = (max + min) / 2;
+      if (max !== min) {
+        const d = max - min;
+        s = l > .5 ? d / (2 - max - min) : d / (max + min);
+        if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+        if (max === g) h = (b - r) / d + 2;
+        if (max === b) h = (r - g) / d + 4;
+        h /= 6;
+      }
+      return [h, s, l];
+    }
+
+    function hslToRgb(hsl) {
+      let [h, s, l] = hsl;
+      h = ((h % 1) + 1) % 1;
+      if (s === 0) {
+        const value = l * 255;
+        return [value, value, value];
+      }
+      const hue2rgb = (p, q, t) => {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1 / 6) return p + (q - p) * 6 * t;
+        if (t < 1 / 2) return q;
+        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+        return p;
+      };
+      const q = l < .5 ? l * (1 + s) : l + s - l * s;
+      const p = 2 * l - q;
+      return [
+        hue2rgb(p, q, h + 1 / 3) * 255,
+        hue2rgb(p, q, h) * 255,
+        hue2rgb(p, q, h - 1 / 3) * 255
+      ];
+    }
+
+    function polishBrandColor(rgb) {
+      const [h, s, l] = rgbToHsl(rgb);
+      return rgbToHex(hslToRgb([h, Math.max(.42, Math.min(.82, s)), Math.max(.32, Math.min(.48, l))]));
+    }
+
+    function secondaryFromPrimary(hex) {
+      const [h, s, l] = rgbToHsl(hexToRgb(hex));
+      return rgbToHex(hslToRgb([h + .10, Math.max(.36, s * .7), Math.min(.72, Math.max(.52, l + .18))]));
+    }
+
+    async function extractLogoPalette(src) {
+      const image = await loadImage(src);
+      const canvas = document.createElement("canvas");
+      canvas.width = 72;
+      canvas.height = 72;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const fit = objectFit(image.width, image.height, canvas.width, canvas.height);
+      ctx.drawImage(image, fit.x, fit.y, fit.width, fit.height);
+      const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      const buckets = new Map();
+      for (let i = 0; i < pixels.length; i += 4) {
+        const alpha = pixels[i + 3];
+        if (alpha < 100) continue;
+        const rgb = [pixels[i], pixels[i + 1], pixels[i + 2]];
+        const [, saturation, lightness] = rgbToHsl(rgb);
+        if (lightness > .92 || lightness < .08 || saturation < .12) continue;
+        const key = rgb.map(value => Math.round(value / 24) * 24).join(",");
+        const current = buckets.get(key) || { rgb: [0, 0, 0], count: 0, score: 0 };
+        current.rgb = current.rgb.map((value, index) => value + rgb[index]);
+        current.count += 1;
+        current.score += saturation * (1 - Math.abs(lightness - .48));
+        buckets.set(key, current);
+      }
+      const ranked = [...buckets.values()]
+        .map(item => ({
+          rgb: item.rgb.map(value => value / item.count),
+          score: item.score
+        }))
+        .sort((a, b) => b.score - a.score);
+      if (!ranked.length) return { primary: "#18835f", secondary: "#72b7df" };
+      const primary = polishBrandColor(ranked[0].rgb);
+      const primaryHue = rgbToHsl(hexToRgb(primary))[0];
+      const secondaryCandidate = ranked.find(item => Math.abs(rgbToHsl(item.rgb)[0] - primaryHue) > .08);
+      return {
+        primary,
+        secondary: secondaryCandidate ? polishBrandColor(secondaryCandidate.rgb) : secondaryFromPrimary(primary)
+      };
+    }
+
+    async function compactImageDataUri(src, maxSize = 512) {
+      const image = await loadImage(src);
+      const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
+      const width = Math.max(1, Math.round(image.width * scale));
+      const height = Math.max(1, Math.round(image.height * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, width, height);
+      ctx.drawImage(image, 0, 0, width, height);
+      return canvas.toDataURL("image/png");
+    }
+
+    async function ensureLogoReference() {
+      if (!state.brandLogo) return "";
+      if (!state.brandLogoReference) {
+        state.brandLogoReference = await compactImageDataUri(state.brandLogo, 512);
+      }
+      if (state.brandLogo.length > 700000) {
+        state.brandLogo = state.brandLogoReference;
+        renderLogoPreview();
+        if (state.deck?.brand) {
+          state.deck.brand.logo = state.brandLogo;
+        }
+      }
+      return state.brandLogoReference;
+    }
+
+    async function applyLogoPalette(src) {
+      const palette = await extractLogoPalette(src);
+      setColorPair("primary", palette.primary);
+      setColorPair("secondary", palette.secondary);
+      return palette;
+    }
+
+    function mixHex(a, b, amount) {
+      const left = hexToRgb(a);
+      const right = hexToRgb(b);
+      return rgbToHex(left.map((value, index) => value * (1 - amount) + right[index] * amount));
+    }
+
+    function setColorPair(kind, value) {
+      const hex = normalizeHex(value);
+      if (!hex) return;
+      els[`${kind}Color`].value = hex;
+      els[`${kind}Hex`].value = hex;
+    }
+
+    function renderLogoPreview() {
+      els.logoPreview.innerHTML = state.brandLogo
+        ? `<img src="${state.brandLogo}" alt="医院 Logo 预览">`
+        : "LOGO";
+    }
+
+    function renderQuickTopics() {
+      const topics = state.topicRecommendations.length ? state.topicRecommendations : topicLibrary;
+      els.quickTopics.innerHTML = topics.map((item, index) => `
+        <button class="topic-chip" type="button" data-topic-index="${index}">
+          ${escapeHtml(item.title)}
+          ${item.reason ? `<small>${escapeHtml(item.reason)}</small>` : ""}
+        </button>
+      `).join("");
+    }
+
+    function topicPayload() {
+      const data = input();
+      return {
+        currentTopic: data.topic,
+        preferredPet: data.pet,
+        contentType: data.type,
+        audience: data.audience,
+        conversionGoal: data.cta,
+        sceneStyle: state.style,
+        brand: {
+          hospital: data.hospital,
+          doctor: data.doctor,
+          phone: data.phone,
+          address: data.address,
+          mood: data.brandMood,
+          primaryColor: data.primaryColor,
+          secondaryColor: data.secondaryColor,
+          hasLogo: Boolean(data.logo)
+        },
+        hospitalProfile: data.hospitalProfile,
+        output: {
+          topicCount: 8
+        }
+      };
+    }
+
+    function topicPayloadFingerprint(payload) {
+      return JSON.stringify({
+        pet: payload.preferredPet,
+        type: payload.contentType,
+        audience: payload.audience,
+        cta: payload.conversionGoal,
+        style: payload.sceneStyle,
+        brand: payload.brand,
+        profile: payload.hospitalProfile
+      });
+    }
+
+    function setTopicStatus(text, loading = false) {
+      if (els.topicStatus) els.topicStatus.textContent = text;
+      if (els.refreshTopics) {
+        els.refreshTopics.disabled = loading;
+        els.refreshTopics.textContent = loading ? "生成中" : "AI刷新";
+      }
+    }
+
+    function topicCacheKey() {
+      return "chengcheng-topic-recommendations";
+    }
+
+    function loadTopicCache() {
+      try {
+        const payload = topicPayload();
+        const fingerprint = topicPayloadFingerprint(payload);
+        const cached = JSON.parse(localStorage.getItem(topicCacheKey()) || "{}");
+        if (cached.fingerprint !== fingerprint || !Array.isArray(cached.topics)) return false;
+        state.topicRecommendations = cached.topics;
+        state.topicFingerprint = fingerprint;
+        renderQuickTopics();
+        setTopicStatus(cached.status || "已加载上次基于医院画像生成的推荐选题。");
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    async function refreshTopicRecommendations(options = {}) {
+      if (state.isGeneratingTopics) return;
+      const payload = topicPayload();
+      const fingerprint = topicPayloadFingerprint(payload);
+      if (options.silent && fingerprint === state.topicFingerprint && state.topicRecommendations.length) return;
+      state.isGeneratingTopics = true;
+      setTopicStatus("正在根据医院画像生成推荐选题...", true);
+      try {
+        const response = await fetch("/api/topics/recommend", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (!response.ok) throw new Error(`API ${response.status}`);
+        const result = await response.json();
+        const topics = Array.isArray(result.topics) ? result.topics.filter(item => item?.title).slice(0, 8) : [];
+        if (!topics.length) throw new Error("no topics");
+        state.topicRecommendations = topics;
+        state.topicFingerprint = fingerprint;
+        renderQuickTopics();
+        const source = String(result.source || "");
+        const status = source.startsWith("text-model:")
+          ? "DeepSeek 已结合医院画像、服务重点和内容目标更新选题。"
+          : "已根据医院画像生成推荐选题，本地策略兜底可用。";
+        setTopicStatus(status);
+        localStorage.setItem(topicCacheKey(), JSON.stringify({ fingerprint, topics, status, updatedAt: new Date().toISOString() }));
+      } catch (error) {
+        setTopicStatus("AI 推荐暂时失败，已保留当前推荐选题。");
+        if (!options.silent) showToast("AI 推荐选题失败，请检查接口配置");
+      } finally {
+        state.isGeneratingTopics = false;
+        if (els.refreshTopics) {
+          els.refreshTopics.disabled = false;
+          els.refreshTopics.textContent = "AI刷新";
+        }
+      }
+    }
+
+    function scheduleTopicRecommendations() {
+      window.clearTimeout(state.topicTimer);
+      setTopicStatus("医院画像已更新，稍后自动刷新推荐选题。");
+      state.topicTimer = window.setTimeout(() => {
+        refreshTopicRecommendations({ silent: true });
+      }, 1200);
+    }
+
+    function selectStyle(style) {
+      const button = document.querySelector(`.segment[data-style="${style}"]`);
+      if (!button) return;
+      document.querySelectorAll(".segment").forEach(item => item.classList.remove("active"));
+      button.classList.add("active");
+      state.style = style;
+      if (state.deck) render();
+    }
+
+    function applyTopic(item) {
+      els.topic.value = item.title;
+      els.pet.value = item.pet;
+      els.type.value = item.type;
+      els.cta.value = item.cta;
+      if (item.audience && Array.from(els.audience.options).some(option => option.value === item.audience)) {
+        els.audience.value = item.audience;
+      }
+      selectStyle(item.style);
+      showToast(item.reason ? `已套用推荐选题：${item.reason}` : "已套用推荐选题");
+    }
+
+    function currentVisualTemplate() {
+      const data = input();
+      return {
+        name: `${data.hospital}当前模板`,
+        sub: `${data.brandMood} · ${state.style}`,
+        primary: data.primaryColor,
+        secondary: data.secondaryColor,
+        mood: data.brandMood,
+        style: state.style,
+        radius: moodRadius(data.brandMood),
+        visualPrompt: els.visualPrompt?.value?.trim() || "",
+        imageRequest: {
+          model: els.imageModel.value.trim() || "gpt-image-2",
+          size: els.imageSize.value || "3:4",
+          resolution: els.imageResolution.value || "1k"
+        },
+        visualPlan: state.visualPlan,
+        rules: [
+          "中文文字由稳定排版引擎渲染",
+          "保留底部医生提示安全区",
+          "image2.0 生成完整知识卡片视觉母版",
+          "避免直接生成小字和医院电话"
+        ]
+      };
+    }
+
+    function styleLabel(style) {
+      return {
+        doctor: "医生科普",
+        warm: "温柔养护",
+        alert: "急救提醒",
+        report: "检查报告",
+        cute: "可爱专业",
+        premium: "高端简洁"
+      }[style] || style;
+    }
+
+    function loadImage(src) {
+      return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.crossOrigin = "anonymous";
+        image.onload = () => resolve(image);
+        image.onerror = reject;
+        image.src = src;
+      });
+    }
+
+    function drawCoverImage(ctx, image, x, y, width, height) {
+      const scale = Math.max(width / image.width, height / image.height);
+      const drawWidth = image.width * scale;
+      const drawHeight = image.height * scale;
+      ctx.drawImage(image, x + (width - drawWidth) / 2, y + (height - drawHeight) / 2, drawWidth, drawHeight);
+    }
+
+    function objectFit(sourceWidth, sourceHeight, boxWidth, boxHeight) {
+      const scale = Math.min(boxWidth / sourceWidth, boxHeight / sourceHeight);
+      const width = sourceWidth * scale;
+      const height = sourceHeight * scale;
+      return {
+        width,
+        height,
+        x: (boxWidth - width) / 2,
+        y: (boxHeight - height) / 2
+      };
+    }
+
+    function drawLogoText(ctx, color, hospital, x, y) {
+      ctx.fillStyle = color;
+      ctx.font = "900 58px PingFang SC, Microsoft YaHei, sans-serif";
+      ctx.fillText(Array.from(hospital || "PET").slice(0, 2).join(""), x, y);
+    }
+
+    function clearGeneratedImages() {
+      if (!state.deck) return;
+      const hasGenerated = state.deck.cards.some((card, index) => card.generatedImageUrl || pageImageUrl(index));
+      if (!hasGenerated) return;
+      state.visualPlan = null;
+      state.deck.visualPlan = null;
+      state.deck.cards.forEach(card => delete card.generatedImageUrl);
+      state.pipelineOverrides.visual = "待重新出图";
+    }
+
+    function refreshBrandFromInputs() {
+      if (!state.deck) return;
+      const data = input();
+      clearGeneratedImages();
+      state.deck.brand = {
+        hospital: data.hospital,
+        doctor: data.doctor,
+        phone: data.phone,
+        address: data.address,
+        primaryColor: data.primaryColor,
+        secondaryColor: data.secondaryColor,
+        mood: data.brandMood,
+        logo: data.logo,
+        profile: data.hospitalProfile
+      };
+      state.deck.publishPack = buildPublishPack(data, state.deck.cards);
+      render();
+    }
+
+    function syncColor(kind, value) {
+      setColorPair(kind, value);
+      refreshBrandFromInputs();
+    }
+
+    async function canvasForCard(card, index) {
+      const deck = state.deck;
+      const palette = brandPalette(deck.brand);
+      const canvas = document.createElement("canvas");
+      canvas.width = 1242;
+      canvas.height = 1656;
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = palette[0];
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const generatedUrl = pageImageUrl(index);
+      if (generatedUrl) {
+        const generated = await loadImage(generatedUrl);
+        drawCoverImage(ctx, generated, 0, 0, canvas.width, canvas.height);
+        return canvas;
+      }
+      ctx.fillStyle = palette[3];
+      ctx.beginPath();
+      ctx.arc(card.layout === "premium" ? 1160 : 1110, 18, card.layout === "cover" ? 410 : 320, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = palette[4] + "44";
+      ctx.beginPath();
+      ctx.arc(-30, 1518, card.layout === "summary" ? 330 : 230, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = palette[1];
+      ctx.globalAlpha = .72;
+      ctx.font = "700 42px PingFang SC, Microsoft YaHei, sans-serif";
+      ctx.fillText(`${deck.issue} · ${card.label}`, 92, 112);
+      ctx.textAlign = "right";
+      ctx.fillText(deck.brand.hospital, 1150, 112);
+      ctx.textAlign = "left";
+      ctx.globalAlpha = 1;
+
+      ctx.fillStyle = "#ffffff";
+      drawRoundRect(ctx, 92, 172, 190, 190, 48);
+      ctx.fill();
+      ctx.strokeStyle = palette[2] + "55";
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      if (deck.brand.logo) {
+        try {
+          const logo = await loadImage(deck.brand.logo);
+          const fit = objectFit(logo.width, logo.height, 148, 148);
+          ctx.drawImage(logo, 113 + fit.x, 193 + fit.y, fit.width, fit.height);
+        } catch {
+          drawLogoText(ctx, palette[2], deck.brand.hospital, 124, 288);
+        }
+      } else {
+        drawLogoText(ctx, palette[2], deck.brand.hospital, 124, 288);
+      }
+
+      ctx.fillStyle = palette[1];
+      ctx.font = `900 ${card.layout === "cover" ? 108 : 82}px PingFang SC, Microsoft YaHei, sans-serif`;
+      let y = wrapText(ctx, card.title, 92, 438, 990, card.layout === "cover" ? 112 : 90, 3);
+      ctx.fillStyle = palette[1] + "cc";
+      ctx.font = "700 46px PingFang SC, Microsoft YaHei, sans-serif";
+      y = wrapText(ctx, card.subtitle, 92, y + 42, 980, 58, 3) + 46;
+
+      if (card.layout === "cover" || card.layout === "symptom_map") {
+        ctx.fillStyle = palette[2];
+        drawRoundRect(ctx, 92, y, 1058, 142, 28);
+        ctx.fill();
+        ctx.fillStyle = "#fff";
+        ctx.font = "900 54px PingFang SC, Microsoft YaHei, sans-serif";
+        ctx.fillText(deck.issue, 132, y + 72);
+        ctx.font = "800 30px PingFang SC, Microsoft YaHei, sans-serif";
+        wrapText(ctx, card.insight || "先判断轻重缓急，再决定是否到院。", 322, y + 54, 760, 40, 2);
+        y += 174;
+        card.points.slice(0, 4).forEach((point, i) => {
+          const col = i % 2;
+          const row = Math.floor(i / 2);
+          if (y + row * 158 + 132 > contentBottom) return;
+          drawCanvasPoint(ctx, point, ["看", "记", "避", "问"][i] || String(i + 1), 92 + col * 538, y + row * 158, 510, 132, palette, true);
+        });
+        y += 342;
+      } else if (card.layout === "report") {
+        card.points.slice(0, 5).forEach((point, i) => {
+          if (y + 106 > contentBottom) return;
+          drawCanvasReportRow(ctx, point, ["目的", "重点", "准备", "误区", "复查"][i] || "要点", 92, y, 1058, palette);
+          y += 126;
+        });
+      } else if (card.layout === "timeline") {
+        card.points.slice(0, 5).forEach((point, i) => {
+          if (y + 98 > contentBottom) return;
+          drawCanvasTimeline(ctx, point, i + 1, 92, y, 1058, palette);
+          y += 126;
+        });
+      } else if (card.layout === "summary") {
+        ctx.fillStyle = palette[2];
+        drawRoundRect(ctx, 92, y, 1058, 226, 34);
+        ctx.fill();
+        ctx.fillStyle = "#fff";
+        ctx.font = "900 60px PingFang SC, Microsoft YaHei, sans-serif";
+        wrapText(ctx, card.formula || `${deck.issue}判断公式`, 132, y + 78, 960, 72, 2);
+        ctx.font = "800 31px PingFang SC, Microsoft YaHei, sans-serif";
+        wrapText(ctx, card.insight || card.points.join(" / "), 132, y + 164, 930, 42, 2);
+        y += 260;
+        card.points.slice(0, 4).forEach((point, i) => {
+          if (y + 102 > contentBottom) return;
+          drawCanvasPoint(ctx, point, String(i + 1), 92, y, 1058, 102, palette, false);
+          y += 118;
+        });
+      } else {
+        card.points.slice(0, 5).forEach((point, i) => {
+          const pointHeight = card.layout === "mistake" || card.layout === "warning" ? 126 : 112;
+          if (y + pointHeight > contentBottom) return;
+          drawCanvasPoint(ctx, point, String(i + 1), 92, y, 1058, pointHeight, palette, false);
+          y += pointHeight + 16;
+        });
+      }
+
+      drawRoundRect(ctx, 92, 1392, 1058, 136, 28);
+      ctx.fillStyle = palette[2] + "1c";
+      ctx.fill();
+      ctx.fillStyle = palette[1] + "bb";
+      ctx.font = "700 34px PingFang SC, Microsoft YaHei, sans-serif";
+      wrapText(ctx, card.note, 130, 1444, 960, 44, 2);
+
+      ctx.fillStyle = palette[1] + "88";
+      ctx.font = "800 34px PingFang SC, Microsoft YaHei, sans-serif";
+      ctx.textAlign = "right";
+      ctx.fillText(`${String(index + 1).padStart(2, "0")} / ${String(deck.cards.length).padStart(2, "0")}`, 1150, 1594);
+      return canvas;
+    }
+
+    function drawCanvasPoint(ctx, point, marker, x, y, width, height, palette, compact) {
+      drawRoundRect(ctx, x, y, width, height, 26);
+      ctx.fillStyle = "#ffffffc4";
+      ctx.fill();
+      ctx.strokeStyle = palette[2] + "30";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.fillStyle = palette[2];
+      drawRoundRect(ctx, x + 34, y + 26, compact ? 72 : 66, compact ? 72 : 66, 18);
+      ctx.fill();
+      ctx.fillStyle = "#fff";
+      ctx.font = `900 ${compact ? 32 : 35}px PingFang SC, Microsoft YaHei, sans-serif`;
+      ctx.fillText(marker, x + (compact ? 50 : 58), y + (compact ? 74 : 72));
+      ctx.fillStyle = palette[1];
+      ctx.font = `800 ${compact ? 34 : 40}px PingFang SC, Microsoft YaHei, sans-serif`;
+      wrapText(ctx, point, x + (compact ? 130 : 132), y + (compact ? 48 : 47), width - (compact ? 160 : 190), compact ? 42 : 48, 2);
+    }
+
+    function drawCanvasReportRow(ctx, point, marker, x, y, width, palette) {
+      drawRoundRect(ctx, x, y, width, 106, 14);
+      ctx.fillStyle = "#ffffffc8";
+      ctx.fill();
+      ctx.strokeStyle = palette[2] + "28";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.fillStyle = palette[2];
+      ctx.font = "900 34px PingFang SC, Microsoft YaHei, sans-serif";
+      ctx.fillText(marker, x + 38, y + 64);
+      ctx.fillStyle = palette[1];
+      ctx.font = "800 36px PingFang SC, Microsoft YaHei, sans-serif";
+      wrapText(ctx, point, x + 190, y + 44, width - 230, 44, 2);
+    }
+
+    function drawCanvasTimeline(ctx, point, index, x, y, width, palette) {
+      ctx.strokeStyle = palette[2] + "55";
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(x + 43, y + 88);
+      ctx.lineTo(x + 43, y + 124);
+      ctx.stroke();
+      ctx.fillStyle = palette[2];
+      drawRoundRect(ctx, x, y, 86, 86, 22);
+      ctx.fill();
+      ctx.fillStyle = "#fff";
+      ctx.font = "900 34px PingFang SC, Microsoft YaHei, sans-serif";
+      ctx.fillText(String(index).padStart(2, "0"), x + 22, y + 56);
+      drawRoundRect(ctx, x + 114, y, width - 114, 98, 22);
+      ctx.fillStyle = "#ffffffc8";
+      ctx.fill();
+      ctx.fillStyle = palette[1];
+      ctx.font = "800 38px PingFang SC, Microsoft YaHei, sans-serif";
+      wrapText(ctx, point, x + 150, y + 43, width - 180, 46, 2);
+    }
+
+    function wrapText(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
+      const chars = Array.from(text);
+      let line = "";
+      let lines = [];
+      chars.forEach(char => {
+        const test = line + char;
+        if (ctx.measureText(test).width > maxWidth && line) {
+          lines.push(line);
+          line = char;
+        } else {
+          line = test;
+        }
+      });
+      if (line) lines.push(line);
+      lines = lines.slice(0, maxLines);
+      lines.forEach((item, i) => ctx.fillText(item, x, y + i * lineHeight));
+      return y + lines.length * lineHeight;
+    }
+
+    function drawRoundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    function roundedRect(ctx, x, y, w, h, r) {
+      drawRoundRect(ctx, x, y, w, h, r);
+    }
+
+    function canvasWrapText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 20) {
+      const paragraphs = String(text || "").split("\n");
+      let currentY = y;
+      for (const paragraph of paragraphs) {
+        if (!paragraph) {
+          currentY += lineHeight;
+          continue;
+        }
+        const chars = Array.from(paragraph);
+        let line = "";
+        for (const char of chars) {
+          const test = line + char;
+          if (ctx.measureText(test).width > maxWidth && line) {
+            ctx.fillText(line, x, currentY);
+            currentY += lineHeight;
+            maxLines -= 1;
+            line = char;
+            if (maxLines <= 0) return currentY;
+          } else {
+            line = test;
+          }
+        }
+        if (line && maxLines > 0) {
+          ctx.fillText(line, x, currentY);
+          currentY += lineHeight;
+          maxLines -= 1;
+        }
+      }
+      return currentY;
+    }
+
+    function utf8Bytes(text) {
+      return new TextEncoder().encode(String(text || ""));
+    }
+
+    function dataUrlToBytes(dataUrl) {
+      const base64 = dataUrl.split(",")[1] || "";
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+      return bytes;
+    }
+
+    function safeFileName(text) {
+      return String(text || "note").replace(/[\\/:*?"<>|\s]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "note";
+    }
+
+    function concatBytes(parts) {
+      const length = parts.reduce((sum, part) => sum + part.length, 0);
+      const out = new Uint8Array(length);
+      let offset = 0;
+      parts.forEach(part => {
+        out.set(part, offset);
+        offset += part.length;
+      });
+      return out;
+    }
+
+    function u16(value) {
+      return new Uint8Array([value & 255, (value >> 8) & 255]);
+    }
+
+    function u32(value) {
+      return new Uint8Array([value & 255, (value >> 8) & 255, (value >> 16) & 255, (value >> 24) & 255]);
+    }
+
+    const crcTable = (() => {
+      const table = new Uint32Array(256);
+      for (let i = 0; i < 256; i += 1) {
+        let c = i;
+        for (let k = 0; k < 8; k += 1) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+        table[i] = c >>> 0;
+      }
+      return table;
+    })();
+
+    function crc32(bytes) {
+      let crc = 0xffffffff;
+      for (let i = 0; i < bytes.length; i += 1) crc = crcTable[(crc ^ bytes[i]) & 255] ^ (crc >>> 8);
+      return (crc ^ 0xffffffff) >>> 0;
+    }
+
+    function dosDateTime(date = new Date()) {
+      const time = (date.getHours() << 11) | (date.getMinutes() << 5) | Math.floor(date.getSeconds() / 2);
+      const day = ((date.getFullYear() - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate();
+      return { time, day };
+    }
+
+    function createZip(files) {
+      const chunks = [];
+      const central = [];
+      let offset = 0;
+      const { time, day } = dosDateTime();
+      files.forEach(file => {
+        const name = utf8Bytes(file.name);
+        const data = file.data instanceof Uint8Array ? file.data : utf8Bytes(file.data);
+        const crc = crc32(data);
+        const local = concatBytes([
+          u32(0x04034b50), u16(20), u16(2048), u16(0), u16(time), u16(day), u32(crc),
+          u32(data.length), u32(data.length), u16(name.length), u16(0), name, data
+        ]);
+        chunks.push(local);
+        central.push(concatBytes([
+          u32(0x02014b50), u16(20), u16(20), u16(2048), u16(0), u16(time), u16(day), u32(crc),
+          u32(data.length), u32(data.length), u16(name.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(offset), name
+        ]));
+        offset += local.length;
+      });
+      const centralSize = central.reduce((sum, item) => sum + item.length, 0);
+      const end = concatBytes([
+        u32(0x06054b50), u16(0), u16(0), u16(files.length), u16(files.length),
+        u32(centralSize), u32(offset), u16(0)
+      ]);
+      return new Blob([...chunks, ...central, end], { type: "application/zip" });
+    }
+
+    async function pdfFromCanvases(canvases) {
+      const pageWidth = 595;
+      const pageHeight = 842;
+      const objects = [];
+      const pageIds = [];
+      let objectId = 3;
+      for (let i = 0; i < canvases.length; i += 1) {
+        const imageBytes = dataUrlToBytes(canvases[i].toDataURL("image/jpeg", .92));
+        const imageId = objectId++;
+        const contentId = objectId++;
+        const pageId = objectId++;
+        pageIds.push(pageId);
+        objects[imageId] = pdfStreamObject(imageId, `<< /Type /XObject /Subtype /Image /Width ${canvases[i].width} /Height ${canvases[i].height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${imageBytes.length} >>`, imageBytes);
+        const content = utf8Bytes(`q\n${pageWidth} 0 0 ${pageHeight} 0 0 cm\n/Im${i} Do\nQ`);
+        objects[contentId] = pdfStreamObject(contentId, `<< /Length ${content.length} >>`, content);
+        objects[pageId] = utf8Bytes(`${pageId} 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /XObject << /Im${i} ${imageId} 0 R >> >> /Contents ${contentId} 0 R >>\nendobj\n`);
+      }
+      objects[1] = utf8Bytes("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
+      objects[2] = utf8Bytes(`2 0 obj\n<< /Type /Pages /Count ${pageIds.length} /Kids [${pageIds.map(id => `${id} 0 R`).join(" ")}] >>\nendobj\n`);
+      const maxId = objectId - 1;
+      const chunks = [utf8Bytes("%PDF-1.4\n")];
+      const offsets = [0];
+      let offset = chunks[0].length;
+      for (let id = 1; id <= maxId; id += 1) {
+        offsets[id] = offset;
+        chunks.push(objects[id]);
+        offset += objects[id].length;
+      }
+      const xrefOffset = offset;
+      let xref = `xref\n0 ${maxId + 1}\n0000000000 65535 f \n`;
+      for (let id = 1; id <= maxId; id += 1) xref += `${String(offsets[id]).padStart(10, "0")} 00000 n \n`;
+      xref += `trailer\n<< /Size ${maxId + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+      chunks.push(utf8Bytes(xref));
+      return new Blob(chunks, { type: "application/pdf" });
+    }
+
+    function pdfStreamObject(id, dict, data) {
+      return concatBytes([
+        utf8Bytes(`${id} 0 obj\n${dict}\nstream\n`),
+        data,
+        utf8Bytes("\nendstream\nendobj\n")
+      ]);
+    }
+
+    function downloadDataUrl(dataUrl, filename) {
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = filename;
+      link.click();
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      downloadDataUrl(url, filename);
+      window.setTimeout(() => URL.revokeObjectURL(url), 500);
+    }
+
+    function wait(ms) {
+      return new Promise(resolve => window.setTimeout(resolve, ms));
+    }
+
+    function trimText(text, max) {
+      return Array.from(text).length > max ? Array.from(text).slice(0, max - 1).join("") + "…" : text;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function showToast(text) {
+      els.toast.textContent = text;
+      els.toast.classList.add("show");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => els.toast.classList.remove("show"), 1800);
+    }
+
+    document.querySelectorAll(".segment").forEach(button => {
+      button.addEventListener("click", () => {
+        selectStyle(button.dataset.style);
+      });
+    });
+
+    document.querySelectorAll(".tab").forEach(button => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(item => item.classList.remove("active"));
+        document.querySelectorAll(".tab-panel").forEach(panel => panel.hidden = true);
+        button.classList.add("active");
+        state.activeTab = button.dataset.tab;
+        document.querySelector(`#panel-${state.activeTab}`).hidden = false;
+        if (state.activeTab === "publish") renderPublish();
+        if (state.activeTab === "api") refreshApiHealth();
+      });
+    });
+
+    els.thumbs.addEventListener("click", event => {
+      const retry = event.target.closest("[data-retry-page]");
+      if (retry) {
+        event.stopPropagation();
+        generateSingleImagePage(Number(retry.dataset.retryPage));
+        return;
+      }
+      const button = event.target.closest("[data-index]");
+      if (!button) return;
+      state.active = Number(button.dataset.index);
+      render();
+    });
+    els.quickTopics.addEventListener("click", event => {
+      const button = event.target.closest("[data-topic-index]");
+      if (!button) return;
+      const topics = state.topicRecommendations.length ? state.topicRecommendations : topicLibrary;
+      applyTopic(topics[Number(button.dataset.topicIndex)]);
+    });
+    els.visualPlan.addEventListener("click", event => {
+      const button = event.target.closest("[data-retry-image-pages]");
+      if (!button) return;
+      generateImagePages();
+    });
+    document.querySelector("#generate").addEventListener("click", generate);
+    document.querySelector("#saveBrand").addEventListener("click", saveBrand);
+    document.querySelector("#exportJson").addEventListener("click", exportJson);
+    document.querySelector("#applyEdit").addEventListener("click", applyEdit);
+    document.querySelector("#rewriteCard").addEventListener("click", rewriteCard);
+    document.querySelector("#compressCard").addEventListener("click", compressCard);
+    document.querySelector("#restoreCard").addEventListener("click", restoreCard);
+    document.querySelector("#autoFix").addEventListener("click", autoFix);
+    document.querySelector("#copyCaption").addEventListener("click", copyCaption);
+    document.querySelector("#export").addEventListener("click", exportCurrentCard);
+    document.querySelector("#exportAll").addEventListener("click", exportAllCards);
+    document.querySelector("#exportReviewPdf").addEventListener("click", exportReviewPdf);
+    document.querySelector("#exportZip").addEventListener("click", exportPublishZip);
+    document.querySelector("#saveDraft").addEventListener("click", saveDraft);
+    document.querySelector("#openAiConfig").addEventListener("click", openAiConfigPanel);
+    document.querySelector("#saveAiConfig").addEventListener("click", saveAiConfig);
+    document.querySelector("#testAiConfig").addEventListener("click", testAiConfig);
+    document.querySelector("#refreshTopics").addEventListener("click", () => refreshTopicRecommendations());
+    document.querySelector("#createReviewLink").addEventListener("click", createReviewLink);
+    document.querySelector("#copyReviewLink").addEventListener("click", copyReviewLink);
+    document.querySelector("#refreshReviewStatus").addEventListener("click", refreshReviewStatus);
+    document.querySelector("#confirmCopy").addEventListener("click", confirmCopy);
+    document.querySelector("#generateImagePages").addEventListener("click", generateImagePages);
+    document.querySelector("#reviewApprove").addEventListener("click", () => submitReview("approved"));
+    document.querySelector("#reviewNeedsChanges").addEventListener("click", () => submitReview("changes"));
+    els.draftList.addEventListener("click", event => {
+      const loadButton = event.target.closest("[data-load-draft]");
+      const deleteButton = event.target.closest("[data-delete-draft]");
+      if (loadButton) {
+        loadDraft(loadButton.dataset.loadDraft);
+      }
+      if (deleteButton) {
+        deleteDraft(deleteButton.dataset.deleteDraft);
+      }
+    });
+    els.primaryColor.addEventListener("input", event => syncColor("primary", event.target.value));
+    els.primaryHex.addEventListener("change", event => syncColor("primary", event.target.value));
+    els.secondaryColor.addEventListener("input", event => syncColor("secondary", event.target.value));
+    els.secondaryHex.addEventListener("change", event => syncColor("secondary", event.target.value));
+    els.brandMood.addEventListener("change", refreshBrandFromInputs);
+    [els.hospitalPositioning, els.serviceFocus, els.localAudience, els.contentStyleGuide].forEach(field => {
+      field.addEventListener("input", scheduleTopicRecommendations);
+      field.addEventListener("change", () => {
+        refreshBrandFromInputs();
+        scheduleTopicRecommendations();
+      });
+    });
+    [els.pet, els.type, els.audience, els.cta, els.brandMood].forEach(field => {
+      field.addEventListener("change", scheduleTopicRecommendations);
+    });
+    [els.hospital, els.doctor, els.phone, els.address].forEach(field => {
+      field.addEventListener("change", () => {
+        refreshBrandFromInputs();
+        scheduleTopicRecommendations();
+      });
+    });
+    els.logoUpload.addEventListener("change", event => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const rawLogo = String(reader.result || "");
+        state.brandLogo = rawLogo;
+        try {
+          const palette = await applyLogoPalette(rawLogo);
+          state.brandLogoReference = await compactImageDataUri(rawLogo, 512);
+          state.brandLogo = state.brandLogoReference;
+          renderLogoPreview();
+          showToast(`已从 Logo 提取品牌色：${palette.primary}`);
+        } catch {
+          state.brandLogoReference = rawLogo.length > 700000 ? "" : rawLogo;
+          renderLogoPreview();
+          showToast("Logo 已应用，颜色提取失败，可手动调整主色");
+        }
+        refreshBrandFromInputs();
+        scheduleTopicRecommendations();
+      };
+      reader.readAsDataURL(file);
+    });
+    document.querySelector("#prev").addEventListener("click", () => {
+      state.active = (state.active - 1 + state.deck.cards.length) % state.deck.cards.length;
+      render();
+    });
+    document.querySelector("#next").addEventListener("click", () => {
+      state.active = (state.active + 1) % state.deck.cards.length;
+      render();
+    });
+
+    window.addEventListener("storage", event => {
+      if (event.key === reviewKey() && state.deck && !new URLSearchParams(location.search).get("review")) {
+        renderPublish();
+      }
+    });
+
+    window.addEventListener("focus", () => {
+      if (state.deck && state.activeTab === "publish" && !new URLSearchParams(location.search).get("review")) {
+        renderPublish();
+      }
+    });
+
+    async function boot() {
+      const reviewId = new URLSearchParams(location.search).get("review");
+      if (reviewId) {
+        await initReviewMode(reviewId);
+        return;
+      }
+      loadBrand();
+      try {
+        await ensureLogoReference();
+      } catch {}
+      if (!loadTopicCache()) renderQuickTopics();
+      refreshTopicRecommendations({ silent: true });
+      renderVisualPlan();
+      renderPipeline("approval");
+      state.deck = buildCards(input());
+      state.originalCards = structuredClone(state.deck.cards);
+      render();
+    }
+
+    boot();
+  </script>
+</body>
+</html>

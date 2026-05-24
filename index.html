@@ -1,0 +1,2851 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>宠物医院小红书 AI 工作台 · 本地单文件版</title>
+  <style>
+    :root {
+      --bg: #eef2f5;
+      --panel: #ffffff;
+      --ink: #17212b;
+      --muted: #66737d;
+      --line: #ccd8df;
+      --green: #465a70;
+      --green-2: #5f7488;
+      --mint: #e6eef2;
+      --rose: #c95a6d;
+      --amber: #b99a66;
+      --blue: #526c91;
+      --cyan: #91a6b5;
+      --panel-glass: rgba(255, 255, 255, .82);
+      --shadow: 0 22px 64px rgba(31, 54, 59, .14);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        linear-gradient(135deg, rgba(70, 90, 112, .18), transparent 31%),
+        linear-gradient(315deg, rgba(145, 166, 181, .18), transparent 32%),
+        linear-gradient(rgba(36, 53, 69, .046) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(36, 53, 69, .046) 1px, transparent 1px),
+        var(--bg);
+      background-size: auto, auto, 28px 28px, 28px 28px, auto;
+    }
+
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 330px minmax(420px, 1fr) 370px;
+      gap: 16px;
+      padding: 16px;
+    }
+
+    .library {
+      min-height: 100vh;
+      padding: 24px;
+      display: grid;
+      align-content: start;
+      gap: 18px;
+    }
+
+    .library-shell {
+      width: min(1100px, 100%);
+      margin: 0 auto;
+      display: grid;
+      gap: 16px;
+    }
+
+    .library-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 18px;
+    }
+
+    .library-head .primary {
+      width: auto;
+      min-width: 128px;
+      margin-top: 0;
+    }
+
+    .library-head h1 {
+      font-size: 24px;
+    }
+
+    .hospital-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 14px;
+    }
+
+    .hospital-card {
+      border: 1px solid rgba(207, 227, 221, .92);
+      border-radius: 8px;
+      padding: 14px;
+      background: var(--panel-glass);
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 12px;
+      text-align: left;
+      backdrop-filter: blur(14px);
+    }
+
+    .hospital-card-main {
+      display: grid;
+      grid-template-columns: 58px 1fr;
+      gap: 12px;
+      align-items: center;
+      border: 0;
+      padding: 0;
+      background: transparent;
+      text-align: left;
+      color: inherit;
+    }
+
+    .hospital-card-logo {
+      width: 58px;
+      height: 58px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      color: var(--green);
+      background: #f8faf9;
+      font-size: 12px;
+      font-weight: 950;
+    }
+
+    .hospital-card-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      padding: 4px;
+    }
+
+    .hospital-card h2 {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.25;
+    }
+
+    .swatches {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .swatch {
+      width: 24px;
+      height: 24px;
+      border: 1px solid rgba(23, 33, 31, .18);
+      border-radius: 7px;
+    }
+
+    .hospital-actions {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .hospital-actions .mini {
+      min-width: 0;
+      width: 100%;
+      min-height: 38px;
+      padding: 7px 8px;
+    }
+
+    .project-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .project-card {
+      border: 1px solid rgba(207, 227, 221, .92);
+      border-radius: 8px;
+      padding: 10px;
+      background: rgba(255, 255, 255, .78);
+      display: grid;
+      gap: 8px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .72);
+    }
+
+    .project-card.active {
+      border-color: rgba(91, 117, 139, .58);
+      box-shadow: 0 0 0 3px rgba(91, 117, 139, .12), 0 10px 24px rgba(20, 31, 43, .07);
+      background: rgba(255, 255, 255, .94);
+    }
+
+    .project-main {
+      border: 0;
+      padding: 0;
+      background: transparent;
+      text-align: left;
+      color: inherit;
+    }
+
+    .project-main b {
+      display: block;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .project-main span {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .project-actions {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .project-actions .mini {
+      width: 100%;
+      min-width: 0;
+      min-height: 34px;
+      padding: 6px 7px;
+      font-size: 12px;
+    }
+
+    .image-status-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .image-status-item {
+      border: 1px solid rgba(207, 227, 221, .92);
+      border-radius: 8px;
+      padding: 9px;
+      background: rgba(255, 255, 255, .78);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .image-status-item b {
+      display: block;
+      font-size: 12px;
+      line-height: 1.3;
+    }
+
+    .image-status-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.3;
+    }
+
+    .status-pill {
+      border-radius: 999px;
+      padding: 4px 8px;
+      color: #fff;
+      background: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .status-pill.done { background: var(--green); }
+    .status-pill.work { background: var(--blue); }
+    .status-pill.fail { background: var(--rose); }
+    .status-pill.wait { background: var(--amber); }
+
+    .panel {
+      min-width: 0;
+      border: 1px solid rgba(207, 227, 221, .92);
+      border-radius: 8px;
+      background: var(--panel-glass);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .sidebar, .inspector {
+      height: calc(100vh - 32px);
+      overflow: auto;
+      padding: 18px;
+    }
+
+    .stage {
+      height: calc(100vh - 32px);
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .mark {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(91, 117, 139, .38);
+      border-radius: 8px;
+      color: #34485f;
+      background:
+        linear-gradient(145deg, rgba(91, 117, 139, .2), rgba(145, 166, 181, .15)),
+        rgba(255, 255, 255, .82);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .55), 0 10px 26px rgba(70, 90, 112, .14);
+      font-weight: 950;
+    }
+
+    h1 { margin: 0; font-size: 18px; line-height: 1.2; }
+    h2 { margin: 0; font-size: 16px; }
+    h3 { margin: 16px 0 8px; font-size: 14px; }
+    p { margin: 0; }
+    .muted { color: var(--muted); font-size: 12px; line-height: 1.5; }
+
+    label {
+      display: block;
+      margin: 12px 0 7px;
+      color: #324354;
+      font-size: 13px;
+      font-weight: 850;
+      letter-spacing: .01em;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: rgba(255, 255, 255, .84);
+      color: var(--ink);
+      padding: 10px 11px;
+      outline: none;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .72);
+    }
+
+    textarea {
+      min-height: 74px;
+      resize: vertical;
+      line-height: 1.55;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 3px rgba(91, 117, 139, .16), inset 0 1px 0 rgba(255, 255, 255, .72);
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .section-box {
+      border: 1px solid rgba(207, 227, 221, .9);
+      border-radius: 8px;
+      padding: 14px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .58), rgba(255, 255, 255, .32)),
+        rgba(248, 252, 251, .68);
+      margin-top: 14px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .72);
+    }
+
+    .section-box h2 {
+      margin: 0 0 4px;
+      color: #324354;
+      font-size: 15px;
+      letter-spacing: .01em;
+    }
+
+    .section-box .muted {
+      margin-bottom: 8px;
+    }
+
+    .section-box:first-of-type {
+      margin-top: 0;
+    }
+
+    .section-actions {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .color-field {
+      display: grid;
+      grid-template-columns: 52px minmax(0, 1fr);
+      gap: 10px;
+      align-items: center;
+    }
+
+    input[type="color"] {
+      width: 52px;
+      min-width: 52px;
+      height: 42px;
+      padding: 3px;
+    }
+
+    .logo-field {
+      display: grid;
+      grid-template-columns: 58px 1fr;
+      gap: 10px;
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    .logo-preview {
+      width: 58px;
+      height: 58px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8faf9;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 950;
+    }
+
+    .logo-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      padding: 4px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: flex-start;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(207, 227, 221, .92);
+      background:
+        linear-gradient(90deg, rgba(91, 117, 139, .1), transparent 45%),
+        rgba(255, 255, 255, .46);
+    }
+
+    .tabs, .actions {
+      display: contents;
+    }
+
+    .tab, .ghost, .primary, .danger, .mini {
+      border: 0;
+      border-radius: 7px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .tab, .ghost, .mini {
+      min-height: 40px;
+      padding: 8px 12px;
+      color: #385065;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .72), rgba(242, 249, 247, .76));
+      border: 1px solid rgba(207, 227, 221, .95);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .82), 0 6px 18px rgba(22, 33, 31, .04);
+    }
+
+    .tab.active {
+      color: #fff;
+      background:
+        linear-gradient(135deg, var(--green), var(--cyan));
+      border-color: rgba(91, 117, 139, .55);
+      box-shadow: 0 10px 24px rgba(70, 90, 112, .18);
+    }
+
+    .primary {
+      width: 100%;
+      min-height: 46px;
+      margin-top: 12px;
+      padding: 10px 14px;
+      color: #fff;
+      background:
+        linear-gradient(135deg, var(--green), var(--cyan));
+      box-shadow: 0 14px 28px rgba(70, 90, 112, .18);
+    }
+
+    .button-pair {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.28fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .button-pair .ghost,
+    .button-pair .primary {
+      width: 100%;
+      min-width: 0;
+      min-height: 46px;
+      white-space: normal;
+      line-height: 1.2;
+      text-align: center;
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+
+    .inspector-actions {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .inspector-actions .primary {
+      margin-top: 0;
+    }
+
+    .section-actions .button-pair {
+      margin-top: 0;
+    }
+
+    .section-actions .primary {
+      margin-top: 0;
+      min-height: 56px;
+    }
+
+    .danger {
+      min-height: 42px;
+      padding: 9px 12px;
+      color: #fff;
+      background: linear-gradient(135deg, var(--rose), #ef6d7d);
+      box-shadow: 0 12px 24px rgba(217, 77, 99, .16);
+    }
+
+    .ghost:disabled, .primary:disabled, .danger:disabled, .mini:disabled {
+      opacity: .56;
+      cursor: not-allowed;
+    }
+
+    .status {
+      padding: 10px 16px;
+      min-height: 43px;
+      color: #465967;
+      background:
+        linear-gradient(90deg, rgba(91, 117, 139, .09), rgba(255, 255, 255, .32));
+      border-bottom: 1px solid rgba(207, 227, 221, .92);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .workspace {
+      min-height: 0;
+      overflow: auto;
+      padding: 18px;
+      display: grid;
+      grid-template-columns: minmax(270px, 430px) 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .card-frame {
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      border-radius: 8px;
+      padding: 18px;
+      background:
+        linear-gradient(135deg, rgba(91, 117, 139, .09), rgba(255, 255, 255, .74));
+      border: 1px solid rgba(207, 227, 221, .95);
+      box-shadow: 0 18px 46px rgba(16, 34, 32, .12), inset 0 1px 0 rgba(255, 255, 255, .84);
+      display: grid;
+    }
+
+    .preview-stack {
+      width: 100%;
+      display: grid;
+      gap: 10px;
+    }
+
+    .export-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .export-row .mini {
+      width: 100%;
+      min-width: 0;
+      min-height: 44px;
+      white-space: normal;
+      line-height: 1.2;
+      text-align: center;
+      font-size: 13px;
+      padding: 8px 9px;
+    }
+
+    .card-frame.preview-clickable {
+      cursor: zoom-in;
+    }
+
+    .xhs-card {
+      border-radius: 8px;
+      padding: 22px;
+      background:
+        linear-gradient(150deg, rgba(247, 251, 249, .95), rgba(255, 250, 242, .95));
+      border: 1px solid rgba(216, 230, 223, .95);
+      display: grid;
+      grid-template-rows: auto auto auto 1fr auto;
+      gap: 14px;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .card-brand {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 42px;
+      color: #465967;
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .card-logo {
+      width: 42px;
+      height: 42px;
+      border: 1px solid rgba(70, 90, 112, .22);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .72);
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      color: var(--green);
+      font-size: 11px;
+      font-weight: 950;
+      flex: 0 0 auto;
+    }
+
+    .card-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      padding: 3px;
+    }
+
+    .card-label {
+      justify-self: start;
+      padding: 5px 9px;
+      border-radius: 999px;
+      color: var(--green);
+      background:
+        linear-gradient(135deg, var(--mint), rgba(255, 255, 255, .82));
+      font-size: 12px;
+      font-weight: 900;
+      border: 1px solid rgba(70, 90, 112, .14);
+    }
+
+    .card-title {
+      margin: 0;
+      font-size: 30px;
+      line-height: 1.12;
+      letter-spacing: 0;
+    }
+
+    .card-subtitle {
+      color: #43524e;
+      font-size: 14px;
+      line-height: 1.5;
+      font-weight: 750;
+    }
+
+    .points {
+      display: grid;
+      gap: 9px;
+      align-content: start;
+      min-height: 0;
+    }
+
+    .point {
+      display: grid;
+      grid-template-columns: 20px 1fr;
+      gap: 8px;
+      align-items: start;
+      color: #23312e;
+      font-size: 15px;
+      line-height: 1.42;
+      font-weight: 760;
+    }
+
+    .dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 6px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: linear-gradient(135deg, var(--green), var(--cyan));
+      font-size: 11px;
+      font-weight: 950;
+    }
+
+    .doctor-note {
+      padding-top: 11px;
+      border-top: 1px dashed rgba(91, 117, 139, .32);
+      color: #4b5c56;
+      font-size: 12px;
+      line-height: 1.5;
+      font-weight: 700;
+    }
+
+    .generated-image {
+      width: 100%;
+      height: 100%;
+      border-radius: 8px;
+      object-fit: cover;
+      grid-row: 1 / -1;
+      grid-column: 1 / -1;
+    }
+
+    .outline {
+      display: grid;
+      gap: 9px;
+    }
+
+    .thumb {
+      border: 1px solid rgba(207, 227, 221, .92);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .78);
+      padding: 10px;
+      text-align: left;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .72);
+    }
+
+    .thumb.active {
+      border-color: rgba(91, 117, 139, .58);
+      box-shadow: 0 0 0 3px rgba(91, 117, 139, .12), 0 10px 24px rgba(20, 31, 43, .08);
+      background: rgba(255, 255, 255, .94);
+    }
+
+    .thumb b {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 13px;
+      color: #24332f;
+    }
+
+    .thumb span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .topic-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 9px;
+    }
+
+    .topic {
+      border: 1px solid rgba(207, 227, 221, .92);
+      border-radius: 8px;
+      padding: 10px;
+      background: rgba(255, 255, 255, .82);
+      text-align: left;
+    }
+
+    .topic b { display: block; font-size: 13px; line-height: 1.4; }
+    .topic span { color: var(--muted); font-size: 12px; line-height: 1.4; }
+
+    .settings {
+      display: grid;
+      gap: 12px;
+    }
+
+    .box {
+      border: 1px solid rgba(207, 227, 221, .92);
+      border-radius: 8px;
+      padding: 12px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .62), rgba(246, 251, 250, .54));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .72);
+    }
+
+    .action-stack {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .action-stack .primary,
+    .action-stack .danger,
+    .action-stack .ghost {
+      width: 100%;
+      margin-top: 0;
+    }
+
+    .compact-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .compact-actions .ghost,
+    .compact-actions .danger {
+      width: 100%;
+      min-width: 0;
+      white-space: normal;
+      line-height: 1.2;
+    }
+
+    .code {
+      overflow: auto;
+      max-height: 220px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      color: #273632;
+      background: #f8faf9;
+      font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      white-space: pre-wrap;
+    }
+
+    .caption {
+      min-height: 150px;
+      color: #273632;
+      line-height: 1.6;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 22px;
+      z-index: 9;
+      transform: translateX(-50%) translateY(12px);
+      opacity: 0;
+      pointer-events: none;
+      padding: 11px 14px;
+      color: #fff;
+      background: #17211f;
+      border-radius: 8px;
+      box-shadow: 0 16px 42px rgba(0, 0, 0, .18);
+      transition: .18s ease;
+      font-weight: 800;
+      max-width: min(520px, calc(100vw - 28px));
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 12px;
+      padding: 18px;
+      background: rgba(13, 22, 20, .72);
+      backdrop-filter: blur(8px);
+    }
+
+    .lightbox-bar {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .lightbox-close {
+      border: 1px solid rgba(255, 255, 255, .32);
+      border-radius: 7px;
+      padding: 9px 13px;
+      color: #fff;
+      background: rgba(255, 255, 255, .12);
+      font-weight: 850;
+    }
+
+    .lightbox-body {
+      min-height: 0;
+      display: grid;
+      place-items: center;
+      overflow: auto;
+    }
+
+    .lightbox-card {
+      width: min(86vw, calc((100vh - 90px) * .75));
+      aspect-ratio: 3 / 4;
+      border-radius: 8px;
+      padding: 20px;
+      background: #fff;
+      box-shadow: 0 26px 80px rgba(0, 0, 0, .35);
+      display: grid;
+    }
+
+    .lightbox-card .xhs-card {
+      width: 100%;
+      height: 100%;
+    }
+
+    [hidden] { display: none !important; }
+
+    @media (max-width: 1120px) {
+      .app { grid-template-columns: 310px 1fr; }
+      .inspector { grid-column: 1 / -1; height: auto; }
+    }
+
+    @media (max-width: 760px) {
+      .app { display: block; padding: 10px; }
+      .sidebar, .stage, .inspector { height: auto; margin-bottom: 10px; }
+      .workspace { grid-template-columns: 1fr; padding: 12px; }
+      .toolbar { display: grid; gap: 10px; justify-content: stretch; }
+      .card-title { font-size: 25px; }
+    }
+  </style>
+</head>
+<body>
+  <section class="library" id="hospitalLibrary">
+    <div class="library-shell">
+      <div class="panel library-head">
+        <div class="brand">
+          <div class="mark">AI</div>
+          <div>
+            <h1>医院档案库</h1>
+            <p class="muted">选择医院后进入小红书图文工作台；档案和图文项目都保存在本机浏览器</p>
+          </div>
+        </div>
+        <button class="primary" id="createHospital" type="button">新增医院</button>
+      </div>
+      <div class="hospital-grid" id="hospitalGrid"></div>
+    </div>
+  </section>
+
+  <main class="app" id="workspaceApp" hidden>
+    <aside class="panel sidebar">
+      <div class="brand">
+        <div class="mark">AI</div>
+        <div>
+          <h1 id="workspaceTitle">小红书 AI 工作台</h1>
+          <p class="muted" id="workspaceMeta">本地单文件版 · API Key 只保存在当前浏览器</p>
+        </div>
+      </div>
+      <button class="ghost" id="backToLibrary" type="button">返回医院档案库</button>
+
+      <section class="section-box">
+        <h2>图文项目</h2>
+        <p class="muted">当前医院的选题和成稿归档</p>
+        <button class="ghost" id="createProject" type="button">新建图文项目</button>
+        <div class="project-list" id="projectList"></div>
+      </section>
+
+      <section class="section-box">
+        <h2>医院背景信息</h2>
+        <p class="muted">品牌、门店和视觉基础信息</p>
+
+        <label for="hospital">医院名称</label>
+        <input id="hospital" value="程程宠物医院">
+
+        <div class="row">
+          <div>
+            <label for="doctor">医生/账号</label>
+            <input id="doctor" value="宠物医生">
+          </div>
+          <div>
+            <label for="pet">宠物类型</label>
+            <select id="pet">
+              <option>猫</option>
+              <option>狗</option>
+              <option>猫狗通用</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="phone">联系电话</label>
+            <input id="phone" value="">
+          </div>
+          <div>
+            <label for="address">门店地址</label>
+            <input id="address" value="">
+          </div>
+        </div>
+
+        <label for="services">医院特色</label>
+        <textarea id="services">内科、软组织外科、猫友好诊疗、疫苗驱虫、体检影像</textarea>
+
+        <label>品牌 LOGO</label>
+        <div class="logo-field">
+          <div class="logo-preview" id="logoPreview">LOGO</div>
+          <input id="logoUpload" type="file" accept="image/*">
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="primaryColor">主色</label>
+            <div class="color-field">
+              <input id="primaryColor" type="color" value="#465a70">
+              <input id="primaryHex" value="#465a70">
+            </div>
+          </div>
+          <div>
+            <label for="secondaryColor">辅色</label>
+            <div class="color-field">
+              <input id="secondaryColor" type="color" value="#91a6b5">
+              <input id="secondaryHex" value="#91a6b5">
+            </div>
+          </div>
+        </div>
+
+        <label for="visualPrompt">视觉要求</label>
+        <textarea id="visualPrompt">专业、干净、亲切，适合宠物医院小红书科普卡片。</textarea>
+      </section>
+
+      <section class="section-box">
+        <h2>内容生成设置</h2>
+        <p class="muted">选题、受众、风格和生成页数</p>
+
+        <button class="ghost" id="recommend" type="button">AI 推荐选题</button>
+
+        <div class="topic-list" id="topicList"></div>
+
+        <label for="topic">内容主题</label>
+        <input id="topic" value="猫咪呕吐">
+
+        <div class="row">
+          <div>
+            <label for="contentType">内容类型</label>
+            <select id="contentType">
+              <option>症状判断</option>
+              <option>日常护理</option>
+              <option>急救提醒</option>
+              <option>检查项目</option>
+              <option>疫苗驱虫</option>
+            </select>
+          </div>
+          <div>
+            <label for="audience">目标人群</label>
+            <select id="audience">
+              <option>新手宠主</option>
+              <option>幼宠家庭</option>
+              <option>老年宠家庭</option>
+              <option>高频复诊客户</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="style">文案风格</label>
+            <select id="style">
+              <option value="doctor">医生专业</option>
+              <option value="warm">温柔亲切</option>
+              <option value="alert">风险提醒</option>
+              <option value="cute">轻松可爱</option>
+            </select>
+          </div>
+          <div>
+            <label for="cardCount">页数</label>
+            <select id="cardCount">
+              <option>1</option>
+              <option>2</option>
+              <option>3</option>
+              <option>4</option>
+              <option>5</option>
+              <option>6</option>
+              <option selected>7</option>
+              <option>8</option>
+              <option>9</option>
+              <option>10</option>
+              <option>11</option>
+              <option>12</option>
+              <option>13</option>
+              <option>14</option>
+              <option>15</option>
+              <option>16</option>
+              <option>17</option>
+              <option>18</option>
+              <option>19</option>
+              <option>20</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="section-actions">
+          <div class="button-pair">
+            <button class="ghost" id="saveDraft" type="button">保存项目</button>
+            <button class="primary" id="generate" type="button">生成小红<br>书图文稿</button>
+          </div>
+        </div>
+      </section>
+    </aside>
+
+    <section class="panel stage">
+      <div class="toolbar">
+        <div class="tabs">
+          <button class="tab active" data-tab="preview" type="button">预览</button>
+          <button class="tab" data-tab="copy" type="button">文案</button>
+          <button class="tab" data-tab="settings" type="button">接口</button>
+        </div>
+        <div class="actions">
+          <button class="mini" id="prev" type="button">上一页</button>
+          <button class="mini" id="next" type="button">下一页</button>
+          <button class="mini" id="generateImage" type="button">image2.0 当前页</button>
+          <button class="mini" id="generateAllImages" type="button">image2.0 全部页</button>
+        </div>
+      </div>
+      <div class="status" id="status">请先在“接口”里填写自己的 API Key，然后生成文案。</div>
+
+      <div class="workspace" id="panel-preview">
+        <div class="preview-stack">
+          <div class="card-frame preview-clickable" id="previewCardFrame" title="点击放大预览">
+            <article class="xhs-card" id="card">
+              <div class="card-brand">
+                <div class="card-logo">LOGO</div>
+                <span>程程宠物医院</span>
+              </div>
+              <div class="card-label">封面</div>
+              <h2 class="card-title">猫咪呕吐别慌，先看这个</h2>
+              <div class="card-subtitle">呕吐是很多疾病的信号，新手家长先别急，按步骤判断。</div>
+              <div class="points">
+                <div class="point"><span class="dot">1</span><span>观察呕吐物性状与颜色</span></div>
+                <div class="point"><span class="dot">2</span><span>记录呕吐频率与时间</span></div>
+                <div class="point"><span class="dot">3</span><span>检查精神状态与食欲</span></div>
+              </div>
+              <div class="doctor-note">如果猫咪同时出现嗜睡、腹泻、拒食，请尽快到院评估。</div>
+            </article>
+          </div>
+          <div class="export-row">
+            <button class="mini" id="exportPng" type="button">导出当前 PNG</button>
+            <button class="mini" id="exportAllPng" type="button">导出全部 PNG</button>
+            <button class="mini" id="exportJson" type="button">导出 JSON</button>
+            <button class="mini" id="exportPublishPack" type="button">导出发布包</button>
+          </div>
+        </div>
+        <div class="outline" id="outline"></div>
+        <div class="box">
+          <h2>图片任务</h2>
+          <p class="muted">管理 image2.0 出图进度和缺失页</p>
+          <div class="compact-actions">
+            <button class="ghost" id="retryMissingImages" type="button">补生成缺失页</button>
+            <button class="ghost" id="pollImageTasks" type="button">查询未完成任务</button>
+          </div>
+          <div class="image-status-list" id="imageStatusList"></div>
+        </div>
+      </div>
+
+      <div class="workspace" id="panel-copy" hidden>
+        <div>
+          <h2>标题备选</h2>
+          <div class="box" id="titles"></div>
+          <h3>正文 Caption</h3>
+          <textarea class="caption" id="caption"></textarea>
+        </div>
+        <div>
+          <h2>标签</h2>
+          <div class="box" id="hashtags"></div>
+          <h3>模型返回</h3>
+          <pre class="code" id="raw"></pre>
+        </div>
+      </div>
+
+      <div class="workspace" id="panel-settings" hidden>
+        <div class="settings">
+          <div class="box">
+            <h2>DeepSeek 文案模型</h2>
+            <label for="textBaseUrl">Base URL</label>
+            <input id="textBaseUrl" value="https://api.deepseek.com/v1">
+            <label for="textModel">模型</label>
+            <input id="textModel" value="deepseek-v4-flash">
+            <label for="textApiKey">API Key</label>
+            <input id="textApiKey" type="password" placeholder="sk-...">
+          </div>
+          <div class="box">
+            <h2>图片模型（可选）</h2>
+            <label for="imageBaseUrl">Base URL</label>
+            <input id="imageBaseUrl" value="https://api.apimart.ai/v1">
+            <label for="imageModel">模型</label>
+            <input id="imageModel" value="gpt-image-2">
+            <label for="imageApiKey">API Key</label>
+            <input id="imageApiKey" type="password" placeholder="sk-...">
+          </div>
+        </div>
+        <div class="settings">
+          <div class="box">
+            <h2>本地设置</h2>
+            <p class="muted">Key 会保存在这个浏览器的 localStorage。把文件发给别人时，不会带走你电脑里的 Key。</p>
+            <div class="action-stack">
+              <button class="primary" id="saveConfig" type="button">保存接口配置</button>
+              <button class="danger" id="clearConfig" type="button">清空本地 Key</button>
+            </div>
+          </div>
+          <div class="box">
+            <h2>数据备份</h2>
+            <p class="muted">导出/导入医院档案和图文项目；不会导出 API Key。</p>
+            <div class="compact-actions">
+              <button class="ghost" id="exportAllData" type="button">导出全部数据</button>
+              <button class="ghost" id="importAllDataButton" type="button">导入备份</button>
+            </div>
+            <input id="importAllData" type="file" accept="application/json" hidden>
+            <div class="action-stack">
+              <button class="danger" id="clearHospitalData" type="button">清空当前医院项目</button>
+            </div>
+          </div>
+          <div class="box">
+            <h2>直连状态</h2>
+            <p class="muted" id="corsHint">纯 HTML 直接请求第三方 API，是否可用取决于接口是否允许浏览器跨域访问。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel inspector">
+      <h2>当前页编辑</h2>
+      <label for="editLabel">栏目</label>
+      <input id="editLabel">
+      <label for="editTitle">标题</label>
+      <textarea id="editTitle"></textarea>
+      <label for="editSubtitle">副标题</label>
+      <textarea id="editSubtitle"></textarea>
+      <label for="editPoints">要点（每行一条）</label>
+      <textarea id="editPoints"></textarea>
+      <label for="editNote">医生提示</label>
+      <textarea id="editNote"></textarea>
+      <div class="inspector-actions">
+        <button class="primary" id="applyEdit" type="button">应用到当前页</button>
+        <div class="button-pair">
+          <button class="ghost" id="copyCaption" type="button">复制 Caption</button>
+          <button class="ghost" id="loadDraft" type="button">读取当前项目</button>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="lightbox" id="lightbox" hidden>
+    <div class="lightbox-bar">
+      <button class="lightbox-close" id="closeLightbox" type="button">关闭</button>
+    </div>
+    <div class="lightbox-body">
+      <div class="lightbox-card" id="lightboxCard"></div>
+    </div>
+  </div>
+
+  <script>
+    const els = Object.fromEntries(
+      Array.from(document.querySelectorAll("[id]")).map(item => [item.id, item])
+    );
+
+    const state = {
+      active: 0,
+      deck: null,
+      raw: null,
+      busy: false,
+      logoDataUrl: "",
+      currentHospitalId: "",
+      currentProjectId: ""
+    };
+
+    const configKey = "xhs-local-ai-config";
+    const hospitalKey = "xhs-local-hospitals";
+    const activeHospitalKey = "xhs-local-active-hospital";
+    const legacyDraftKey = "xhs-local-draft";
+
+    function showToast(message) {
+      els.toast.textContent = message;
+      els.toast.classList.add("show");
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => els.toast.classList.remove("show"), 2600);
+    }
+
+    function setStatus(message) {
+      els.status.textContent = message;
+    }
+
+    function randomId(prefix = "id") {
+      return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    function readHospitals() {
+      try {
+        const hospitals = JSON.parse(localStorage.getItem(hospitalKey) || "[]");
+        return Array.isArray(hospitals) ? hospitals : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function writeHospitals(hospitals) {
+      localStorage.setItem(hospitalKey, JSON.stringify(hospitals));
+    }
+
+    function currentHospital() {
+      return readHospitals().find(hospital => hospital.id === state.currentHospitalId) || null;
+    }
+
+    function draftKeyForHospital(id = state.currentHospitalId) {
+      return id ? `xhs-local-draft-${id}` : legacyDraftKey;
+    }
+
+    function projectsKeyForHospital(id = state.currentHospitalId) {
+      return id ? `xhs-local-projects-${id}` : "xhs-local-projects";
+    }
+
+    function readProjects(id = state.currentHospitalId) {
+      try {
+        const projects = JSON.parse(localStorage.getItem(projectsKeyForHospital(id)) || "[]");
+        return Array.isArray(projects) ? projects : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function writeProjects(projects, id = state.currentHospitalId) {
+      localStorage.setItem(projectsKeyForHospital(id), JSON.stringify(projects));
+    }
+
+    function currentProject() {
+      return readProjects().find(project => project.id === state.currentProjectId) || null;
+    }
+
+    function projectFromCurrent(existing = {}) {
+      const data = input();
+      return {
+        ...existing,
+        id: existing.id || state.currentProjectId || randomId("project"),
+        title: state.deck?.title || data.topic || "未命名图文项目",
+        topic: data.topic,
+        updatedAt: new Date().toISOString(),
+        input: data,
+        deck: state.deck,
+        raw: state.raw,
+        active: state.active
+      };
+    }
+
+    function saveCurrentProject(options = {}) {
+      if (!state.currentHospitalId || !state.deck) return;
+      const projects = readProjects();
+      const index = projects.findIndex(project => project.id === state.currentProjectId);
+      const next = projectFromCurrent(index >= 0 ? projects[index] : {});
+      state.currentProjectId = next.id;
+      if (index >= 0) projects[index] = next;
+      else projects.unshift(next);
+      writeProjects(projects);
+      renderProjectList();
+      if (!options.silent) showToast("项目已保存");
+    }
+
+    function ensureProjectForHospital() {
+      const projects = readProjects();
+      if (projects.length) {
+        openProject(projects[0].id, { silent: true });
+        return;
+      }
+      createProject({ silent: true });
+    }
+
+    function hospitalFromInputs(existing = {}) {
+      const data = input();
+      return {
+        ...existing,
+        id: existing.id || state.currentHospitalId || randomId("hospital"),
+        name: data.hospital,
+        hospital: data.hospital,
+        doctor: data.doctor,
+        pet: data.pet,
+        phone: data.phone,
+        address: data.address,
+        services: data.services,
+        primaryColor: data.primaryColor,
+        secondaryColor: data.secondaryColor,
+        visualPrompt: data.visualPrompt,
+        logoDataUrl: data.logoDataUrl,
+        updatedAt: new Date().toISOString()
+      };
+    }
+
+    function defaultHospital() {
+      const saved = readConfig();
+      return {
+        id: randomId("hospital"),
+        name: saved.hospital || "新医院档案",
+        hospital: saved.hospital || "新医院档案",
+        doctor: saved.doctor || "宠物医生",
+        pet: saved.pet || "猫",
+        phone: saved.phone || "",
+        address: saved.address || "",
+        services: saved.services || "内科、软组织外科、猫友好诊疗、疫苗驱虫、体检影像",
+        primaryColor: normalizeHex(saved.primaryHex || saved.primaryColor, "#465a70"),
+        secondaryColor: normalizeHex(saved.secondaryHex || saved.secondaryColor, "#91a6b5"),
+        visualPrompt: saved.visualPrompt || "专业、干净、亲切，适合宠物医院小红书科普卡片。",
+        logoDataUrl: saved.logoDataUrl || "",
+        updatedAt: new Date().toISOString()
+      };
+    }
+
+    function ensureHospitalLibrary() {
+      let hospitals = readHospitals();
+      if (!hospitals.length) {
+        hospitals = [defaultHospital()];
+        writeHospitals(hospitals);
+      }
+      return hospitals;
+    }
+
+    function persistCurrentHospital() {
+      if (!state.currentHospitalId) return;
+      const hospitals = readHospitals();
+      const index = hospitals.findIndex(item => item.id === state.currentHospitalId);
+      const next = hospitalFromInputs(index >= 0 ? hospitals[index] : {});
+      if (index >= 0) hospitals[index] = next;
+      else hospitals.unshift(next);
+      writeHospitals(hospitals);
+      localStorage.setItem(activeHospitalKey, next.id);
+      renderHospitalLibrary();
+    }
+
+    function applyHospital(hospital) {
+      els.hospital.value = hospital.hospital || hospital.name || "";
+      els.doctor.value = hospital.doctor || "宠物医生";
+      els.pet.value = hospital.pet || "猫";
+      els.phone.value = hospital.phone || "";
+      els.address.value = hospital.address || "";
+      els.services.value = hospital.services || "";
+      els.visualPrompt.value = hospital.visualPrompt || "";
+      state.logoDataUrl = hospital.logoDataUrl || "";
+      syncColor("primary", hospital.primaryColor || "#465a70", false);
+      syncColor("secondary", hospital.secondaryColor || "#91a6b5", false);
+      renderLogoPreview();
+      applyDocumentTheme();
+    }
+
+    function renderHospitalLibrary() {
+      const hospitals = ensureHospitalLibrary();
+      els.hospitalGrid.innerHTML = hospitals.map(hospital => `
+        <article class="hospital-card">
+          <button class="hospital-card-main" type="button" data-enter-hospital="${escapeAttr(hospital.id)}">
+            <div class="hospital-card-logo">${hospital.logoDataUrl ? `<img src="${escapeAttr(hospital.logoDataUrl)}" alt="医院 LOGO">` : "LOGO"}</div>
+            <div>
+              <h2>${escapeHtml(hospital.hospital || hospital.name || "未命名医院")}</h2>
+              <p class="muted">${escapeHtml([hospital.doctor, hospital.pet, formatDate(hospital.updatedAt)].filter(Boolean).join(" · "))}</p>
+              <div class="swatches">
+                <span class="swatch" style="background:${escapeAttr(hospital.primaryColor || "#465a70")}"></span>
+                <span class="swatch" style="background:${escapeAttr(hospital.secondaryColor || "#91a6b5")}"></span>
+              </div>
+            </div>
+          </button>
+          <div class="hospital-actions">
+            <button class="mini" type="button" data-enter-hospital="${escapeAttr(hospital.id)}">进入</button>
+            <button class="mini" type="button" data-duplicate-hospital="${escapeAttr(hospital.id)}">复制</button>
+            <button class="mini" type="button" data-delete-hospital="${escapeAttr(hospital.id)}">删除</button>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    function enterHospital(id) {
+      const hospital = readHospitals().find(item => item.id === id);
+      if (!hospital) return showToast("医院档案不存在");
+      state.currentHospitalId = id;
+      localStorage.setItem(activeHospitalKey, id);
+      applyHospital(hospital);
+      els.hospitalLibrary.hidden = true;
+      els.workspaceApp.hidden = false;
+      els.workspaceTitle.textContent = hospital.hospital || hospital.name || "小红书 AI 工作台";
+      els.workspaceMeta.textContent = "医院工作区 · 档案和图文项目保存在本机浏览器";
+      ensureProjectForHospital();
+      renderProjectList();
+      setStatus(`已进入 ${hospital.hospital || hospital.name}`);
+    }
+
+    function showHospitalLibrary() {
+      persistCurrentHospital();
+      els.workspaceApp.hidden = true;
+      els.hospitalLibrary.hidden = false;
+      renderHospitalLibrary();
+    }
+
+    function createHospital() {
+      const hospital = {
+        ...defaultHospital(),
+        id: randomId("hospital"),
+        hospital: "新医院档案",
+        name: "新医院档案"
+      };
+      const hospitals = readHospitals();
+      hospitals.unshift(hospital);
+      writeHospitals(hospitals);
+      renderHospitalLibrary();
+      enterHospital(hospital.id);
+    }
+
+    function duplicateHospital(id) {
+      const hospitals = readHospitals();
+      const source = hospitals.find(item => item.id === id);
+      if (!source) return;
+      const copy = {
+        ...source,
+        id: randomId("hospital"),
+        hospital: `${source.hospital || source.name} 副本`,
+        name: `${source.hospital || source.name} 副本`,
+        updatedAt: new Date().toISOString()
+      };
+      hospitals.unshift(copy);
+      writeHospitals(hospitals);
+      renderHospitalLibrary();
+    }
+
+    function deleteHospital(id) {
+      const hospitals = readHospitals();
+      if (hospitals.length <= 1) return showToast("至少保留一个医院档案");
+      const target = hospitals.find(item => item.id === id);
+      if (!confirm(`删除「${target?.hospital || target?.name || "这个医院"}」？本机图文项目也会删除。`)) return;
+      writeHospitals(hospitals.filter(item => item.id !== id));
+      localStorage.removeItem(draftKeyForHospital(id));
+      localStorage.removeItem(projectsKeyForHospital(id));
+      if (state.currentHospitalId === id) state.currentHospitalId = "";
+      renderHospitalLibrary();
+    }
+
+    function renderProjectList() {
+      const projects = readProjects();
+      if (!els.projectList) return;
+      if (!projects.length) {
+        els.projectList.innerHTML = `<div class="muted">还没有图文项目。</div>`;
+        return;
+      }
+      els.projectList.innerHTML = projects.map(project => `
+        <article class="project-card ${project.id === state.currentProjectId ? "active" : ""}">
+          <button class="project-main" type="button" data-open-project="${escapeAttr(project.id)}">
+            <b>${escapeHtml(project.title || project.topic || "未命名项目")}</b>
+            <span>${escapeHtml([project.topic, formatDate(project.updatedAt)].filter(Boolean).join(" · "))}</span>
+          </button>
+          <div class="project-actions">
+            <button class="mini" type="button" data-open-project="${escapeAttr(project.id)}">打开</button>
+            <button class="mini" type="button" data-copy-project="${escapeAttr(project.id)}">复制</button>
+            <button class="mini" type="button" data-delete-project="${escapeAttr(project.id)}">删除</button>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    function createProject(options = {}) {
+      if (!state.currentHospitalId) return;
+      state.currentProjectId = randomId("project");
+      state.raw = null;
+      state.active = 0;
+      state.deck = normalizeDeck({}, input());
+      render();
+      saveCurrentProject({ silent: true });
+      setStatus("已新建图文项目");
+      if (!options.silent) showToast("已新建图文项目");
+    }
+
+    function openProject(id, options = {}) {
+      const project = readProjects().find(item => item.id === id);
+      if (!project) return showToast("图文项目不存在");
+      state.currentProjectId = id;
+      restoreProject(project);
+      renderProjectList();
+      setStatus(`已打开图文项目：${project.title || project.topic || "未命名项目"}`);
+      if (!options.silent) showToast("项目已打开");
+    }
+
+    function restoreProject(project) {
+      for (const [key, value] of Object.entries(project.input || {})) {
+        if (els[key] && typeof value !== "object") els[key].value = value;
+      }
+      state.logoDataUrl = project.input?.logoDataUrl || state.logoDataUrl;
+      renderLogoPreview();
+      state.deck = project.deck || normalizeDeck({}, input());
+      state.raw = project.raw || null;
+      state.active = project.active || 0;
+      render();
+    }
+
+    function copyProject(id) {
+      const projects = readProjects();
+      const source = projects.find(project => project.id === id);
+      if (!source) return;
+      const copy = {
+        ...structuredClone(source),
+        id: randomId("project"),
+        title: `${source.title || source.topic || "图文项目"} 副本`,
+        updatedAt: new Date().toISOString()
+      };
+      projects.unshift(copy);
+      writeProjects(projects);
+      renderProjectList();
+      showToast("项目已复制");
+    }
+
+    function deleteProject(id) {
+      const projects = readProjects();
+      if (projects.length <= 1) return showToast("至少保留一个图文项目");
+      const target = projects.find(project => project.id === id);
+      if (!confirm(`删除「${target?.title || target?.topic || "这个项目"}」？`)) return;
+      writeProjects(projects.filter(project => project.id !== id));
+      if (state.currentProjectId === id) {
+        const next = readProjects()[0];
+        if (next) openProject(next.id, { silent: true });
+      }
+      renderProjectList();
+    }
+
+    function exportAllData() {
+      const hospitals = readHospitals();
+      const projects = Object.fromEntries(hospitals.map(hospital => [hospital.id, readProjects(hospital.id)]));
+      const backup = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        hospitals,
+        projects
+      };
+      downloadBlob(
+        new Blob([JSON.stringify(backup, null, 2)], { type: "application/json;charset=utf-8" }),
+        `xhs-workbench-backup-${formatDate(new Date().toISOString())}.json`
+      );
+      showToast("全部数据已导出");
+    }
+
+    function importAllDataFile(file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const backup = JSON.parse(String(reader.result || "{}"));
+          if (!Array.isArray(backup.hospitals) || !backup.projects) throw new Error("Invalid backup");
+          const current = readHospitals();
+          const mergedMap = new Map(current.map(hospital => [hospital.id, hospital]));
+          backup.hospitals.forEach(hospital => mergedMap.set(hospital.id || randomId("hospital"), hospital));
+          const mergedHospitals = Array.from(mergedMap.values());
+          writeHospitals(mergedHospitals);
+          Object.entries(backup.projects || {}).forEach(([hospitalId, projects]) => {
+            if (Array.isArray(projects)) writeProjects(projects, hospitalId);
+          });
+          renderHospitalLibrary();
+          showToast("备份已导入");
+        } catch {
+          showToast("备份文件读取失败");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function clearCurrentHospitalData() {
+      if (!state.currentHospitalId) return showToast("请先进入医院");
+      if (!confirm("清空当前医院下全部图文项目？医院档案会保留。")) return;
+      writeProjects([]);
+      createProject({ silent: true });
+      showToast("当前医院项目已清空");
+    }
+
+    function formatDate(value) {
+      if (!value) return "";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "";
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    }
+
+    function input() {
+      return {
+        hospital: els.hospital.value.trim() || "宠物医院",
+        doctor: els.doctor.value.trim() || "宠物医生",
+        pet: els.pet.value,
+        topic: els.topic.value.trim() || "宠物健康问题",
+        contentType: els.contentType.value,
+        audience: els.audience.value,
+        style: els.style.value,
+        cardCount: Number(els.cardCount.value || 7),
+        services: els.services.value.trim(),
+        phone: els.phone.value.trim(),
+        address: els.address.value.trim(),
+        primaryColor: normalizeHex(els.primaryHex.value || els.primaryColor.value, "#465a70"),
+        secondaryColor: normalizeHex(els.secondaryHex.value || els.secondaryColor.value, "#91a6b5"),
+        visualPrompt: els.visualPrompt.value.trim(),
+        logoDataUrl: state.logoDataUrl,
+        textBaseUrl: els.textBaseUrl.value.trim(),
+        textModel: els.textModel.value.trim() || "deepseek-v4-flash",
+        textApiKey: els.textApiKey.value.trim()
+      };
+    }
+
+    function loadConfig() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(configKey) || "{}");
+        for (const [key, value] of Object.entries(saved)) {
+          if (els[key] && typeof value === "string") els[key].value = value;
+        }
+        if (saved.textApiKey) els.textApiKey.placeholder = `已保存：${maskKey(saved.textApiKey)}`;
+        if (saved.imageApiKey) els.imageApiKey.placeholder = `已保存：${maskKey(saved.imageApiKey)}`;
+        if (saved.logoDataUrl) state.logoDataUrl = saved.logoDataUrl;
+        syncColor("primary", els.primaryHex.value || els.primaryColor.value, false);
+        syncColor("secondary", els.secondaryHex.value || els.secondaryColor.value, false);
+        renderLogoPreview();
+      } catch {}
+    }
+
+    function saveConfig(options = {}) {
+      const silent = Boolean(options.silent);
+      const saved = {
+        textBaseUrl: els.textBaseUrl.value.trim(),
+        textModel: els.textModel.value.trim(),
+        textApiKey: els.textApiKey.value.trim() || readConfig().textApiKey || "",
+        imageBaseUrl: els.imageBaseUrl.value.trim(),
+        imageModel: els.imageModel.value.trim(),
+        imageApiKey: els.imageApiKey.value.trim() || readConfig().imageApiKey || "",
+        hospital: els.hospital.value.trim(),
+        doctor: els.doctor.value.trim(),
+        phone: els.phone.value.trim(),
+        address: els.address.value.trim(),
+        services: els.services.value.trim(),
+        primaryColor: normalizeHex(els.primaryHex.value || els.primaryColor.value, "#465a70"),
+        primaryHex: normalizeHex(els.primaryHex.value || els.primaryColor.value, "#465a70"),
+        secondaryColor: normalizeHex(els.secondaryHex.value || els.secondaryColor.value, "#91a6b5"),
+        secondaryHex: normalizeHex(els.secondaryHex.value || els.secondaryColor.value, "#91a6b5"),
+        visualPrompt: els.visualPrompt.value.trim(),
+        logoDataUrl: state.logoDataUrl
+      };
+      localStorage.setItem(configKey, JSON.stringify(saved));
+      els.textApiKey.value = "";
+      els.imageApiKey.value = "";
+      loadConfig();
+      persistCurrentHospital();
+      if (!silent) showToast("接口配置已保存到本机浏览器");
+    }
+
+    function readConfig() {
+      try {
+        return JSON.parse(localStorage.getItem(configKey) || "{}");
+      } catch {
+        return {};
+      }
+    }
+
+    function clearConfig() {
+      localStorage.removeItem(configKey);
+      els.textApiKey.value = "";
+      els.imageApiKey.value = "";
+      els.textApiKey.placeholder = "sk-...";
+      els.imageApiKey.placeholder = "sk-...";
+      state.logoDataUrl = "";
+      renderLogoPreview();
+      showToast("本地 Key 已清空");
+    }
+
+    function maskKey(key) {
+      return key.length > 12 ? `${key.slice(0, 7)}...${key.slice(-4)}` : "已保存";
+    }
+
+    function normalizeHex(value, fallback) {
+      const text = String(value || "").trim();
+      return /^#[0-9a-f]{6}$/i.test(text) ? text : fallback;
+    }
+
+    function syncColor(type, value, shouldRender = true) {
+      const fallback = type === "primary" ? "#465a70" : "#91a6b5";
+      const color = normalizeHex(value, fallback);
+      const colorInput = type === "primary" ? els.primaryColor : els.secondaryColor;
+      const hexInput = type === "primary" ? els.primaryHex : els.secondaryHex;
+      colorInput.value = color;
+      hexInput.value = color;
+      if (type === "primary") {
+        document.documentElement.style.setProperty("--green", color);
+        document.documentElement.style.setProperty("--green-2", mixColor(color, "#ffffff", .22));
+      } else {
+        document.documentElement.style.setProperty("--amber", color);
+        document.documentElement.style.setProperty("--cyan", color);
+      }
+      applyDocumentTheme();
+      if (shouldRender) render();
+    }
+
+    function applyDocumentTheme() {
+      const data = input();
+      document.body.style.background = `
+        linear-gradient(135deg, ${hexToRgba(data.primaryColor, .13)}, transparent 32%),
+        linear-gradient(315deg, ${hexToRgba(data.secondaryColor, .12)}, transparent 31%),
+        linear-gradient(rgba(36, 53, 69, .046) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(36, 53, 69, .046) 1px, transparent 1px),
+        var(--bg)
+      `;
+      document.body.style.backgroundSize = "auto, auto, 28px 28px, 28px 28px, auto";
+      document.documentElement.style.setProperty("--mint", mixColor(data.primaryColor, "#ffffff", .84));
+      document.documentElement.style.setProperty("--line", mixColor(data.primaryColor, "#ffffff", .78));
+    }
+
+    function hexToRgba(hex, alpha) {
+      const rgb = hexToRgb(hex);
+      return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
+    }
+
+    function renderLogoPreview() {
+      els.logoPreview.innerHTML = state.logoDataUrl
+        ? `<img src="${state.logoDataUrl}" alt="品牌 LOGO">`
+        : "LOGO";
+    }
+
+    async function applyLogoBrandColors(dataUrl) {
+      const colors = await extractBrandColorsFromLogo(dataUrl);
+      if (!colors.primary) return;
+      syncColor("primary", colors.primary, false);
+      if (colors.secondary) syncColor("secondary", colors.secondary, false);
+      render();
+    }
+
+    async function extractBrandColorsFromLogo(dataUrl) {
+      const image = await loadImage(dataUrl);
+      const canvas = document.createElement("canvas");
+      canvas.width = 96;
+      canvas.height = 96;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const fit = objectFit(image.width, image.height, canvas.width, canvas.height);
+      ctx.drawImage(image, fit.x, fit.y, fit.width, fit.height);
+      const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      const buckets = new Map();
+      for (let i = 0; i < pixels.length; i += 4) {
+        const alpha = pixels[i + 3];
+        if (alpha < 120) continue;
+        const r = pixels[i];
+        const g = pixels[i + 1];
+        const b = pixels[i + 2];
+        const hsl = rgbToHsl(r, g, b);
+        if (hsl.l < .12 || hsl.l > .92 || hsl.s < .16) continue;
+        const key = `${Math.round(r / 24) * 24},${Math.round(g / 24) * 24},${Math.round(b / 24) * 24}`;
+        const item = buckets.get(key) || { r: 0, g: 0, b: 0, count: 0, h: 0, s: 0, l: 0 };
+        item.r += r;
+        item.g += g;
+        item.b += b;
+        item.h += hsl.h;
+        item.s += hsl.s;
+        item.l += hsl.l;
+        item.count += 1;
+        buckets.set(key, item);
+      }
+      const ranked = Array.from(buckets.values()).map(item => {
+        const color = {
+          r: Math.round(item.r / item.count),
+          g: Math.round(item.g / item.count),
+          b: Math.round(item.b / item.count),
+          h: item.h / item.count,
+          s: item.s / item.count,
+          l: item.l / item.count,
+          count: item.count
+        };
+        color.score = color.count * (color.s + .2) * (1 - Math.abs(color.l - .52));
+        return color;
+      }).sort((a, b) => b.score - a.score);
+      const primary = ranked[0];
+      const secondary = ranked.find(color => colorDistance(color, primary) > 90 && Math.abs(color.h - primary.h) > 18) || ranked[1];
+      return {
+        primary: primary ? rgbToHex(primary.r, primary.g, primary.b) : "",
+        secondary: secondary ? rgbToHex(secondary.r, secondary.g, secondary.b) : ""
+      };
+    }
+
+    function rgbToHsl(r, g, b) {
+      r /= 255;
+      g /= 255;
+      b /= 255;
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      let h = 0;
+      let s = 0;
+      const l = (max + min) / 2;
+      if (max !== min) {
+        const d = max - min;
+        s = l > .5 ? d / (2 - max - min) : d / (max + min);
+        if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+        else if (max === g) h = (b - r) / d + 2;
+        else h = (r - g) / d + 4;
+        h *= 60;
+      }
+      return { h, s, l };
+    }
+
+    function rgbToHex(r, g, b) {
+      return `#${[r, g, b].map(value => Math.max(0, Math.min(255, value)).toString(16).padStart(2, "0")).join("")}`;
+    }
+
+    function colorDistance(a, b) {
+      if (!a || !b) return 0;
+      return Math.sqrt((a.r - b.r) ** 2 + (a.g - b.g) ** 2 + (a.b - b.b) ** 2);
+    }
+
+    function systemPrompt() {
+      return [
+        "你是宠物医院的新媒体内容策划和执业兽医科普编辑。",
+        "请生成适合小红书 3:4 图文卡片的中文内容。",
+        "必须保持医疗合规：不能远程诊断，不能承诺疗效，不能建议自行使用处方药或人药。",
+        "输出必须是 JSON，不要 Markdown，不要解释。"
+      ].join("\n");
+    }
+
+    function userPrompt(data) {
+      return JSON.stringify({
+        task: "generate_pet_hospital_xhs_note",
+        requirements: {
+          cardCount: data.cardCount,
+          language: "zh-CN",
+          style: data.style,
+          outputSchema: {
+            noteTitle: "string",
+            titles: ["string"],
+            hashtags: ["string"],
+            caption: "string",
+            cards: [{
+              page: 1,
+              layout: "cover | symptom_map | clinic_tip | warning | summary",
+              label: "string",
+              title: "string",
+              subtitle: "string",
+              points: ["string"],
+              insight: "string",
+              doctorNote: "string",
+              riskLevel: "low | medium | high"
+            }],
+            compliance: {
+              status: "passed | warned",
+              checks: ["diagnosis_boundary", "drug_safety", "treatment_claim", "triage_hint"]
+            }
+          }
+        },
+        context: {
+          hospital: data.hospital,
+          doctor: data.doctor,
+          phone: data.phone,
+          address: data.address,
+          services: data.services,
+          brandColors: {
+            primary: data.primaryColor,
+            secondary: data.secondaryColor
+          },
+          visualPrompt: data.visualPrompt,
+          hasLogo: Boolean(data.logoDataUrl),
+          topic: data.topic,
+          pet: data.pet,
+          contentType: data.contentType,
+          audience: data.audience
+        }
+      }, null, 2);
+    }
+
+    function topicPrompt(data) {
+      return JSON.stringify({
+        task: "recommend_pet_hospital_xhs_topics",
+        output: "返回 JSON：{ topics: [{ title, pet, type, style, cta, audience, reason }] }",
+        context: {
+          hospital: data.hospital,
+          services: data.services,
+          issue: data.topic,
+          pet: data.pet,
+          audience: data.audience
+        }
+      }, null, 2);
+    }
+
+    async function callTextModel(messages, timeoutMs = 65000) {
+      const data = input();
+      const saved = readConfig();
+      const apiKey = data.textApiKey || saved.textApiKey || "";
+      const baseUrl = data.textBaseUrl || saved.textBaseUrl || "https://api.deepseek.com/v1";
+      const model = data.textModel || saved.textModel || "deepseek-v4-flash";
+      if (!apiKey) throw new Error("请先填写并保存 DeepSeek API Key");
+
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetch(`${baseUrl.replace(/\/$/, "")}/chat/completions`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            authorization: `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model,
+            temperature: 0.72,
+            response_format: { type: "json_object" },
+            messages
+          }),
+          signal: controller.signal
+        });
+        const text = await response.text();
+        if (!response.ok) throw new Error(`API ${response.status}: ${text.slice(0, 220)}`);
+        const body = JSON.parse(text);
+        return parseJson(body.choices?.[0]?.message?.content || "");
+      } catch (error) {
+        if (error.name === "AbortError") throw new Error("请求超时，请稍后重试或换用更快的模型");
+        if (/Failed to fetch|NetworkError|Load failed/i.test(error.message)) {
+          throw new Error("浏览器无法直连 API，可能是 CORS 或网络限制。请确认该 API 支持网页跨域请求。");
+        }
+        throw error;
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    function parseJson(text) {
+      const cleaned = String(text || "").trim().replace(/^```json\s*/i, "").replace(/```$/i, "").trim();
+      try {
+        return JSON.parse(cleaned);
+      } catch {
+        const match = cleaned.match(/\{[\s\S]*\}/);
+        if (!match) throw new Error("模型没有返回可解析 JSON");
+        return JSON.parse(match[0]);
+      }
+    }
+
+    async function generate() {
+      if (state.busy) return;
+      state.busy = true;
+      els.generate.disabled = true;
+      setStatus("DeepSeek 正在生成文案...");
+      try {
+        saveConfig({ silent: true });
+        const data = input();
+        const note = await callTextModel([
+          { role: "system", content: systemPrompt() },
+          { role: "user", content: userPrompt(data) }
+        ]);
+        state.raw = note;
+        state.deck = normalizeDeck(note, data);
+        state.active = 0;
+        render();
+        persistCurrentHospital();
+        saveCurrentProject({ silent: true });
+        setStatus(`已生成 ${state.deck.cards.length} 页文案：${state.deck.title}`);
+        showToast("文案已生成");
+      } catch (error) {
+        setStatus(error.message);
+        showToast(error.message);
+      } finally {
+        state.busy = false;
+        els.generate.disabled = false;
+      }
+    }
+
+    async function recommendTopics() {
+      if (state.busy) return;
+      state.busy = true;
+      els.recommend.disabled = true;
+      setStatus("DeepSeek 正在推荐选题...");
+      try {
+        saveConfig({ silent: true });
+        const data = input();
+        const result = await callTextModel([
+          { role: "system", content: "你是宠物医院小红书选题策划。只返回 JSON。" },
+          { role: "user", content: topicPrompt(data) }
+        ], 30000);
+        renderTopics(result.topics || []);
+        persistCurrentHospital();
+        setStatus("已生成推荐选题");
+      } catch (error) {
+        setStatus(error.message);
+        showToast(error.message);
+      } finally {
+        state.busy = false;
+        els.recommend.disabled = false;
+      }
+    }
+
+    async function generateCurrentImage() {
+      if (!state.deck) return showToast("请先生成文案");
+      if (state.busy) return;
+      state.busy = true;
+      els.generateImage.disabled = true;
+      els.generateAllImages.disabled = true;
+      try {
+        await generateImagePage(state.active);
+      } finally {
+        state.busy = false;
+        els.generateImage.disabled = false;
+        els.generateAllImages.disabled = false;
+      }
+    }
+
+    async function generateAllImages() {
+      if (!state.deck) return showToast("请先生成文案");
+      if (state.busy) return;
+      state.busy = true;
+      els.generateImage.disabled = true;
+      els.generateAllImages.disabled = true;
+      try {
+        for (let index = 0; index < state.deck.cards.length; index += 1) {
+          state.active = index;
+          render();
+          await generateImagePage(index, { batch: true });
+        }
+        const done = state.deck.cards.filter(card => card.generatedImageUrl).length;
+        setStatus(`image2.0 全部页处理完成：${done}/${state.deck.cards.length}`);
+        showToast(`全部页处理完成 ${done}/${state.deck.cards.length}`);
+      } finally {
+        state.busy = false;
+        els.generateImage.disabled = false;
+        els.generateAllImages.disabled = false;
+      }
+    }
+
+    async function retryMissingImages() {
+      if (!state.deck) return showToast("请先生成文案");
+      if (state.busy) return;
+      state.busy = true;
+      els.retryMissingImages.disabled = true;
+      try {
+        for (let index = 0; index < state.deck.cards.length; index += 1) {
+          const card = state.deck.cards[index];
+          if (card.generatedImageUrl) continue;
+          if (card.imageStatus === "failed") {
+            card.imageTaskId = "";
+            card.imageStatus = "";
+          }
+          state.active = index;
+          render();
+          await generateImagePage(index, { batch: true });
+        }
+        render();
+        saveCurrentProject({ silent: true });
+        showToast("缺失页处理完成");
+      } finally {
+        state.busy = false;
+        els.retryMissingImages.disabled = false;
+      }
+    }
+
+    async function pollAllImageTasks() {
+      if (!state.deck) return showToast("请先生成文案");
+      if (state.busy) return;
+      state.busy = true;
+      els.pollImageTasks.disabled = true;
+      try {
+        for (let index = 0; index < state.deck.cards.length; index += 1) {
+          const card = state.deck.cards[index];
+          if (!card.imageTaskId || card.generatedImageUrl || card.imageStatus === "failed") continue;
+          state.active = index;
+          render();
+          await pollImageTask(card.imageTaskId, card, index);
+        }
+        saveCurrentProject({ silent: true });
+        showToast("任务查询完成");
+      } finally {
+        state.busy = false;
+        els.pollImageTasks.disabled = false;
+      }
+    }
+
+    async function generateImagePage(index, options = {}) {
+      const data = input();
+      const saved = readConfig();
+      const apiKey = saved.imageApiKey || els.imageApiKey.value.trim();
+      const baseUrl = (saved.imageBaseUrl || els.imageBaseUrl.value.trim() || "https://api.apimart.ai/v1").replace(/\/$/, "");
+      const model = saved.imageModel || els.imageModel.value.trim() || "gpt-image-2";
+      const card = state.deck.cards[index];
+      if (!apiKey) {
+        showToast("请先在接口页填写图片 API Key");
+        throw new Error("请先在接口页填写图片 API Key");
+      }
+      if (card.generatedImageUrl) {
+        setStatus(`第 ${index + 1} 页已有 image2.0 成图，已跳过`);
+        return;
+      }
+      setStatus(`image2.0 正在生成第 ${index + 1} / ${state.deck.cards.length} 页...`);
+      try {
+        if (card.imageTaskId && !card.generatedImageUrl && card.imageStatus !== "failed") {
+          await pollImageTask(card.imageTaskId, card, index);
+          return;
+        }
+        const prompt = buildImagePrompt(card, data);
+        const response = await fetch(`${baseUrl}/images/generations`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            authorization: `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model,
+            prompt,
+            n: 1,
+            size: "3:4",
+            resolution: "1k"
+          })
+        });
+        const body = await response.json().catch(async () => ({ error: await response.text() }));
+        if (!response.ok) throw new Error(`Image API ${response.status}: ${JSON.stringify(body).slice(0, 240)}`);
+        const first = body.data?.[0] || {};
+        const imageUrl = first.url || (first.b64_json ? `data:image/png;base64,${first.b64_json}` : "");
+        const taskId = first.task_id || first.taskId || "";
+        if (imageUrl) {
+          card.generatedImageUrl = imageUrl;
+          card.imageStatus = "completed";
+          render();
+          saveCurrentProject({ silent: true });
+          setStatus(`第 ${index + 1} 页 image2.0 已生成`);
+          if (!options.batch) showToast("图片已生成");
+        } else if (taskId) {
+          card.imageTaskId = taskId;
+          card.imageStatus = "submitted";
+          render();
+          saveCurrentProject({ silent: true });
+          await pollImageTask(taskId, card, index);
+        } else {
+          throw new Error("图片接口没有返回图片 URL 或任务 ID");
+        }
+      } catch (error) {
+        const message = /Failed to fetch|NetworkError|Load failed/i.test(error.message)
+          ? "浏览器无法直连图片 API，可能是 CORS 或网络限制。"
+          : error.message;
+        card.imageStatus = "failed";
+        setStatus(message);
+        if (!options.batch) showToast(message);
+        if (options.batch) return;
+        throw error;
+      }
+    }
+
+    async function pollImageTask(taskId, card, index = state.active) {
+      const saved = readConfig();
+      const apiKey = saved.imageApiKey || els.imageApiKey.value.trim();
+      const baseUrl = (saved.imageBaseUrl || els.imageBaseUrl.value.trim() || "https://api.apimart.ai/v1").replace(/\/$/, "");
+      for (let attempt = 0; attempt < 24; attempt += 1) {
+        await new Promise(resolve => setTimeout(resolve, attempt ? 5000 : 2000));
+        const response = await fetch(`${baseUrl}/tasks/${encodeURIComponent(taskId)}`, {
+          headers: { authorization: `Bearer ${apiKey}` }
+        });
+        const body = await response.json().catch(async () => ({ error: await response.text() }));
+        if (!response.ok) throw new Error(`Task API ${response.status}: ${JSON.stringify(body).slice(0, 220)}`);
+        const data = body.data || body;
+        const images = Array.isArray(data.result?.images)
+          ? data.result.images.flatMap(item => Array.isArray(item.url) ? item.url : item.url ? [item.url] : [])
+          : [];
+        card.imageStatus = data.status || "processing";
+        setStatus(`第 ${index + 1} 页 image2.0 任务 ${card.imageStatus}，进度 ${data.progress || 0}%`);
+        if (images[0]) {
+          card.generatedImageUrl = images[0];
+          card.imageStatus = "completed";
+          render();
+          saveCurrentProject({ silent: true });
+          showToast(`第 ${index + 1} 页图片已生成`);
+          return;
+        }
+        if (data.status === "failed") throw new Error(data.error?.message || data.error || "图片任务失败");
+      }
+      setStatus("图片任务仍在处理中，可稍后再点 image2.0 当前页继续查询。");
+    }
+
+    function buildImagePrompt(card, data) {
+      return [
+        "请生成一张完整的小红书 3:4 宠物医院科普知识卡片，必须包含清晰中文排版。",
+        `医院：${data.hospital}。主题：${data.topic}。宠物：${data.pet}。`,
+        `品牌色：${data.primaryColor} / ${data.secondaryColor}。视觉要求：${data.visualPrompt}。`,
+        `本页栏目：${card.label}。大标题：${card.title}。副标题：${card.subtitle || ""}。`,
+        `要点：${(card.points || []).join("；")}。医生提示：${card.doctorNote || ""}。`,
+        "风格专业、干净、亲切，避免夸张医疗承诺，适合宠物医院发布。"
+      ].join("\n");
+    }
+
+    function normalizeDeck(note, data) {
+      const fallbackCards = buildFallbackCards(data);
+      const cards = Array.isArray(note.cards) && note.cards.length ? note.cards : fallbackCards;
+      return {
+        title: note.noteTitle || `${data.topic}科普笔记`,
+        titles: Array.isArray(note.titles) ? note.titles : [`${data.topic}别慌，先看这几步`],
+        hashtags: Array.isArray(note.hashtags) ? note.hashtags : ["宠物医院", "养宠科普", data.pet, data.topic],
+        caption: note.caption || `${data.topic}并不一定都是小事。请记录频率、精神食欲和伴随症状，必要时到院评估。`,
+        cards: cards.slice(0, data.cardCount).map((card, index) => ({
+          page: index + 1,
+          label: card.label || `第 ${index + 1} 页`,
+          title: card.title || fallbackCards[index % fallbackCards.length].title,
+          subtitle: card.subtitle || "",
+          points: Array.isArray(card.points) ? card.points.slice(0, 5) : [],
+          insight: card.insight || "",
+          doctorNote: card.doctorNote || card.note || "",
+          riskLevel: card.riskLevel || "low",
+          generatedImageUrl: card.generatedImageUrl || "",
+          imageTaskId: card.imageTaskId || "",
+          imageStatus: card.imageStatus || "",
+          layout: card.layout || "clinic_tip"
+        }))
+      };
+    }
+
+    function buildFallbackCards(data) {
+      return [
+        {
+          label: "封面",
+          title: `${data.topic}，先分清轻重缓急`,
+          subtitle: "不要先搜药，先看精神、频率和伴随症状。",
+          points: ["精神食欲有没有变差", "一天内出现了几次", "有没有疼痛、血便或尿血", "近期是否误食或换粮"],
+          doctorNote: `${data.hospital}提醒：科普内容不能替代面诊。`,
+          riskLevel: "medium"
+        },
+        {
+          label: "观察地图",
+          title: "医生会先问这 5 件事",
+          subtitle: "这些信息比一句“不舒服”更能帮助判断。",
+          points: ["第一次出现的时间点", "一天内发生的次数", "精神食欲是否下降", "排便排尿有没有异常", "照片视频或可疑物品"],
+          doctorNote: "问诊前记录越清楚，医生越容易判断。",
+          riskLevel: "low"
+        },
+        {
+          label: "就医信号",
+          title: "出现这些情况，尽快到院",
+          subtitle: "以下信号提示风险升高，不建议继续在家观察。",
+          points: ["精神明显变差或不吃", "症状反复或越来越重", "伴随出血、疼痛或呼吸异常", "疑似误食中毒或摔伤"],
+          doctorNote: "路上尽量保持安静和通风。",
+          riskLevel: "high"
+        }
+      ];
+    }
+
+    function render() {
+      const deck = state.deck;
+      if (!deck) {
+        renderEdit(null);
+        return;
+      }
+      const data = input();
+      syncColor("primary", data.primaryColor, false);
+      syncColor("secondary", data.secondaryColor, false);
+      state.active = Math.max(0, Math.min(state.active, deck.cards.length - 1));
+      const card = deck.cards[state.active];
+      els.card.innerHTML = card.generatedImageUrl ? `
+        <img class="generated-image" src="${escapeAttr(card.generatedImageUrl)}" alt="第 ${state.active + 1} 页 image2.0 成图">
+      ` : `
+        <div class="card-brand">
+          <div class="card-logo">${data.logoDataUrl ? `<img src="${escapeAttr(data.logoDataUrl)}" alt="品牌 LOGO">` : "LOGO"}</div>
+          <span>${escapeHtml(data.hospital)}</span>
+        </div>
+        <div class="card-label">${escapeHtml(card.label)}</div>
+        <h2 class="card-title">${escapeHtml(card.title)}</h2>
+        <div class="card-subtitle">${escapeHtml(card.subtitle || card.insight || "")}</div>
+        <div class="points">
+          ${(card.points || []).map((point, index) => `
+            <div class="point"><span class="dot">${index + 1}</span><span>${escapeHtml(point)}</span></div>
+          `).join("")}
+        </div>
+        <div class="doctor-note">${escapeHtml(card.doctorNote || "建议结合面诊和检查结果判断。")}</div>
+      `;
+      els.outline.innerHTML = deck.cards.map((item, index) => `
+        <button class="thumb ${index === state.active ? "active" : ""}" type="button" data-page="${index}">
+          <b>${index + 1}. ${escapeHtml(item.label)}</b>
+          <span>${escapeHtml(item.title)}</span>
+        </button>
+      `).join("");
+      els.titles.innerHTML = deck.titles.map(title => `<p>${escapeHtml(title)}</p>`).join("");
+      els.caption.value = deck.caption;
+      els.hashtags.innerHTML = deck.hashtags.map(tag => `<p>${escapeHtml(String(tag).startsWith("#") ? tag : `#${tag}`)}</p>`).join("");
+      els.raw.textContent = JSON.stringify(state.raw || deck, null, 2);
+      renderEdit(card);
+      renderImageStatusList();
+      renderLightboxIfOpen();
+    }
+
+    function renderImageStatusList() {
+      if (!els.imageStatusList || !state.deck) return;
+      els.imageStatusList.innerHTML = state.deck.cards.map((card, index) => {
+        const status = imagePageStatus(card);
+        return `
+          <div class="image-status-item">
+            <div>
+              <b>${index + 1}. ${escapeHtml(card.label || card.title || "未命名页面")}</b>
+              <span>${escapeHtml(card.imageTaskId ? `任务：${card.imageTaskId}` : card.title || "")}</span>
+            </div>
+            <span class="status-pill ${status.className}">${escapeHtml(status.label)}</span>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function imagePageStatus(card) {
+      if (card.generatedImageUrl) return { label: "已完成", className: "done" };
+      if (card.imageStatus === "failed") return { label: "失败", className: "fail" };
+      if (card.imageTaskId || ["submitted", "processing", "pending"].includes(card.imageStatus)) return { label: "处理中", className: "work" };
+      return { label: "未生成", className: "wait" };
+    }
+
+    function renderLightboxIfOpen() {
+      if (els.lightbox.hidden || !state.deck) return;
+      els.lightboxCard.innerHTML = `<article class="xhs-card">${els.card.innerHTML}</article>`;
+    }
+
+    function openLightbox() {
+      if (!state.deck) return;
+      els.lightbox.hidden = false;
+      renderLightboxIfOpen();
+    }
+
+    function closeLightbox() {
+      els.lightbox.hidden = true;
+      els.lightboxCard.innerHTML = "";
+    }
+
+    function renderEdit(card) {
+      els.editLabel.value = card?.label || "";
+      els.editTitle.value = card?.title || "";
+      els.editSubtitle.value = card?.subtitle || "";
+      els.editPoints.value = (card?.points || []).join("\n");
+      els.editNote.value = card?.doctorNote || "";
+    }
+
+    function renderTopics(topics) {
+      els.topicList.innerHTML = topics.slice(0, 8).map(topic => `
+        <button class="topic" type="button" data-topic="${escapeAttr(topic.title || "")}" data-pet="${escapeAttr(topic.pet || "")}" data-type="${escapeAttr(topic.type || "")}" data-style="${escapeAttr(topic.style || "")}" data-audience="${escapeAttr(topic.audience || "")}">
+          <b>${escapeHtml(topic.title || "未命名选题")}</b>
+          <span>${escapeHtml([topic.pet, topic.type, topic.reason].filter(Boolean).join(" · "))}</span>
+        </button>
+      `).join("");
+    }
+
+    function applyEdit() {
+      if (!state.deck) return showToast("请先生成文案");
+      const card = state.deck.cards[state.active];
+      card.label = els.editLabel.value.trim() || card.label;
+      card.title = els.editTitle.value.trim() || card.title;
+      card.subtitle = els.editSubtitle.value.trim();
+      card.points = els.editPoints.value.split("\n").map(item => item.trim()).filter(Boolean).slice(0, 5);
+      card.doctorNote = els.editNote.value.trim();
+      state.deck.caption = els.caption.value;
+      render();
+      saveCurrentProject({ silent: true });
+      showToast("当前页已更新");
+    }
+
+    function saveDraft() {
+      if (!state.deck) return showToast("暂无可保存项目");
+      persistCurrentHospital();
+      localStorage.setItem(draftKeyForHospital(), JSON.stringify({
+        input: input(),
+        deck: state.deck,
+        raw: state.raw,
+        active: state.active
+      }));
+      saveCurrentProject({ silent: true });
+      showToast("项目已保存到当前医院档案");
+    }
+
+    function readDraftForHospital(id = state.currentHospitalId) {
+      try {
+        return JSON.parse(localStorage.getItem(draftKeyForHospital(id)) || "{}");
+      } catch {
+        return {};
+      }
+    }
+
+    function restoreDraft(draft) {
+      for (const [key, value] of Object.entries(draft.input || {})) {
+        if (els[key] && typeof value !== "object") els[key].value = value;
+      }
+      state.logoDataUrl = draft.input?.logoDataUrl || state.logoDataUrl;
+      renderLogoPreview();
+      state.deck = draft.deck;
+      state.raw = draft.raw;
+      state.active = draft.active || 0;
+      render();
+    }
+
+    function loadDraft() {
+      const draft = readDraftForHospital();
+      if (!draft.deck) return showToast("当前医院没有旧版草稿");
+      try {
+        restoreDraft(draft);
+        setStatus(`已读取当前医院旧版草稿：${state.deck.title}`);
+      } catch {
+        showToast("草稿读取失败");
+      }
+    }
+
+    function exportJson() {
+      if (!state.deck) return showToast("请先生成文案");
+      downloadBlob(
+        new Blob([JSON.stringify(state.deck, null, 2)], { type: "application/json;charset=utf-8" }),
+        `${safeFileName(state.deck.title)}.json`
+      );
+    }
+
+    async function exportCurrentPng() {
+      if (!state.deck) return showToast("请先生成文案");
+      const canvas = await canvasForCard(state.deck.cards[state.active], state.active);
+      canvas.toBlob(blob => {
+        if (blob) downloadBlob(blob, `${safeFileName(state.deck.title)}-${state.active + 1}.png`);
+      }, "image/png");
+    }
+
+    async function exportAllPng() {
+      if (!state.deck) return showToast("请先生成文案");
+      showToast("正在导出全部 PNG");
+      for (let index = 0; index < state.deck.cards.length; index += 1) {
+        const canvas = await canvasForCard(state.deck.cards[index], index);
+        await new Promise(resolve => {
+          canvas.toBlob(blob => {
+            if (blob) downloadBlob(blob, `${safeFileName(state.deck.title)}-${index + 1}.png`);
+            setTimeout(resolve, 250);
+          }, "image/png");
+        });
+      }
+    }
+
+    async function exportPublishPack() {
+      if (!state.deck) return showToast("请先生成文案");
+      const base = safeFileName(`${input().hospital}-${state.deck.title}`);
+      showToast("正在导出发布包");
+      const publishText = [
+        `项目：${state.deck.title}`,
+        `医院：${input().hospital}`,
+        "",
+        "标题备选：",
+        ...(state.deck.titles || []).map((title, index) => `${index + 1}. ${title}`),
+        "",
+        "Caption：",
+        state.deck.caption || "",
+        "",
+        "Hashtags：",
+        (state.deck.hashtags || []).map(tag => String(tag).startsWith("#") ? tag : `#${tag}`).join(" "),
+        "",
+        "页面清单：",
+        ...state.deck.cards.map((card, index) => `${index + 1}. ${card.label || ""}｜${card.title || ""}`)
+      ].join("\n");
+      downloadBlob(new Blob([publishText], { type: "text/plain;charset=utf-8" }), `${base}-发布文案.txt`);
+      downloadBlob(new Blob([JSON.stringify(projectFromCurrent(currentProject() || {}), null, 2)], { type: "application/json;charset=utf-8" }), `${base}-项目备份.json`);
+      await exportAllPng();
+    }
+
+    async function canvasForCard(card, index) {
+      const data = input();
+      const canvas = document.createElement("canvas");
+      canvas.width = 900;
+      canvas.height = 1200;
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+      gradient.addColorStop(0, mixColor(data.primaryColor, "#ffffff", .92));
+      gradient.addColorStop(1, mixColor(data.secondaryColor, "#ffffff", .86));
+      roundRect(ctx, 42, 42, 816, 1116, 26);
+      ctx.fillStyle = gradient;
+      ctx.fill();
+      ctx.strokeStyle = mixColor(data.primaryColor, "#ffffff", .72);
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      if (data.logoDataUrl) {
+        try {
+          const logo = await loadImage(data.logoDataUrl);
+          ctx.save();
+          roundRect(ctx, 74, 74, 92, 92, 18);
+          ctx.clip();
+          ctx.fillStyle = "rgba(255,255,255,.78)";
+          ctx.fillRect(74, 74, 92, 92);
+          const fit = objectFit(logo.width, logo.height, 82, 82);
+          ctx.drawImage(logo, 79 + fit.x, 79 + fit.y, fit.width, fit.height);
+          ctx.restore();
+        } catch {}
+      } else {
+        ctx.fillStyle = "rgba(255,255,255,.78)";
+        roundRect(ctx, 74, 74, 92, 92, 18);
+        ctx.fill();
+        ctx.fillStyle = data.primaryColor;
+        ctx.font = "800 24px -apple-system, BlinkMacSystemFont, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("LOGO", 120, 128);
+      }
+
+      ctx.textAlign = "left";
+      ctx.fillStyle = "#465967";
+      ctx.font = "800 28px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillText(data.hospital, 190, 118);
+      ctx.fillStyle = "#64736e";
+      ctx.font = "500 20px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillText([data.doctor, data.phone].filter(Boolean).join(" · "), 190, 151);
+
+      ctx.fillStyle = data.primaryColor;
+      roundRect(ctx, 74, 196, 132, 42, 21);
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "800 22px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillText(card.label || `第 ${index + 1} 页`, 96, 225);
+
+      ctx.fillStyle = "#17211f";
+      ctx.font = "900 58px -apple-system, BlinkMacSystemFont, sans-serif";
+      let y = wrapText(ctx, card.title || "", 74, 310, 750, 68, 3);
+
+      ctx.fillStyle = "#43524e";
+      ctx.font = "700 28px -apple-system, BlinkMacSystemFont, sans-serif";
+      y = wrapText(ctx, card.subtitle || card.insight || "", 74, y + 22, 750, 40, 2) + 28;
+
+      (card.points || []).slice(0, 5).forEach((point, pointIndex) => {
+        ctx.fillStyle = pointIndex % 2 ? data.secondaryColor : data.primaryColor;
+        roundRect(ctx, 74, y - 28, 38, 38, 10);
+        ctx.fill();
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "800 20px -apple-system, BlinkMacSystemFont, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(String(pointIndex + 1), 93, y - 2);
+        ctx.textAlign = "left";
+        ctx.fillStyle = "#24332f";
+        ctx.font = "750 30px -apple-system, BlinkMacSystemFont, sans-serif";
+        y = wrapText(ctx, point, 132, y, 680, 42, 2) + 22;
+      });
+
+      ctx.strokeStyle = "rgba(80, 99, 92, .26)";
+      ctx.setLineDash([9, 9]);
+      ctx.beginPath();
+      ctx.moveTo(74, 1020);
+      ctx.lineTo(826, 1020);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = "#4b5c56";
+      ctx.font = "700 24px -apple-system, BlinkMacSystemFont, sans-serif";
+      wrapText(ctx, card.doctorNote || "建议结合面诊和检查结果判断。", 74, 1072, 750, 34, 2);
+
+      return canvas;
+    }
+
+    function loadImage(src) {
+      return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = reject;
+        image.src = src;
+      });
+    }
+
+    function objectFit(sourceWidth, sourceHeight, boxWidth, boxHeight) {
+      const scale = Math.min(boxWidth / sourceWidth, boxHeight / sourceHeight);
+      const width = sourceWidth * scale;
+      const height = sourceHeight * scale;
+      return { x: (boxWidth - width) / 2, y: (boxHeight - height) / 2, width, height };
+    }
+
+    function wrapText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 4) {
+      const chars = Array.from(String(text || ""));
+      let line = "";
+      let lines = 0;
+      for (const char of chars) {
+        const testLine = line + char;
+        if (ctx.measureText(testLine).width > maxWidth && line) {
+          ctx.fillText(line, x, y);
+          y += lineHeight;
+          lines += 1;
+          line = char;
+          if (lines >= maxLines - 1) break;
+        } else {
+          line = testLine;
+        }
+      }
+      if (line && lines < maxLines) {
+        const remaining = chars.slice(chars.indexOf(line[0]) + line.length).length;
+        ctx.fillText(remaining ? `${line.slice(0, Math.max(0, line.length - 1))}...` : line, x, y);
+        y += lineHeight;
+      }
+      return y;
+    }
+
+    function roundRect(ctx, x, y, width, height, radius) {
+      const r = Math.min(radius, width / 2, height / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + width, y, x + width, y + height, r);
+      ctx.arcTo(x + width, y + height, x, y + height, r);
+      ctx.arcTo(x, y + height, x, y, r);
+      ctx.arcTo(x, y, x + width, y, r);
+      ctx.closePath();
+    }
+
+    function mixColor(a, b, amount) {
+      const ca = hexToRgb(a);
+      const cb = hexToRgb(b);
+      const mix = value => Math.round(ca[value] * (1 - amount) + cb[value] * amount);
+      return `rgb(${mix("r")}, ${mix("g")}, ${mix("b")})`;
+    }
+
+    function hexToRgb(hex) {
+      const text = normalizeHex(hex, "#465a70").slice(1);
+      return {
+        r: parseInt(text.slice(0, 2), 16),
+        g: parseInt(text.slice(2, 4), 16),
+        b: parseInt(text.slice(4, 6), 16)
+      };
+    }
+
+    function copyCaption() {
+      if (!state.deck) return showToast("请先生成文案");
+      const text = `${state.deck.caption}\n\n${state.deck.hashtags.map(tag => String(tag).startsWith("#") ? tag : `#${tag}`).join(" ")}`;
+      navigator.clipboard?.writeText(text).then(
+        () => showToast("Caption 已复制"),
+        () => showToast("当前浏览器不允许自动复制")
+      );
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 500);
+    }
+
+    function safeFileName(text) {
+      return String(text || "xhs-note").replace(/[\\/:*?"<>|]/g, "-").slice(0, 60);
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    function escapeAttr(value) {
+      return escapeHtml(value).replace(/`/g, "&#96;");
+    }
+
+    document.querySelectorAll(".tab").forEach(button => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(item => item.classList.remove("active"));
+        button.classList.add("active");
+        ["preview", "copy", "settings"].forEach(name => {
+          document.querySelector(`#panel-${name}`).hidden = button.dataset.tab !== name;
+        });
+      });
+    });
+
+    els.hospitalGrid.addEventListener("click", event => {
+      const enter = event.target.closest("[data-enter-hospital]");
+      const duplicate = event.target.closest("[data-duplicate-hospital]");
+      const remove = event.target.closest("[data-delete-hospital]");
+      if (enter) enterHospital(enter.dataset.enterHospital);
+      else if (duplicate) duplicateHospital(duplicate.dataset.duplicateHospital);
+      else if (remove) deleteHospital(remove.dataset.deleteHospital);
+    });
+
+    els.createHospital.addEventListener("click", createHospital);
+    els.backToLibrary.addEventListener("click", showHospitalLibrary);
+
+    els.projectList.addEventListener("click", event => {
+      const open = event.target.closest("[data-open-project]");
+      const copy = event.target.closest("[data-copy-project]");
+      const remove = event.target.closest("[data-delete-project]");
+      if (open) openProject(open.dataset.openProject);
+      else if (copy) copyProject(copy.dataset.copyProject);
+      else if (remove) deleteProject(remove.dataset.deleteProject);
+    });
+
+    els.createProject.addEventListener("click", createProject);
+
+    els.outline.addEventListener("click", event => {
+      const button = event.target.closest("[data-page]");
+      if (!button) return;
+      state.active = Number(button.dataset.page);
+      render();
+    });
+
+    els.topicList.addEventListener("click", event => {
+      const button = event.target.closest("[data-topic]");
+      if (!button) return;
+      els.topic.value = button.dataset.topic;
+      if (button.dataset.pet) els.pet.value = button.dataset.pet;
+      if (button.dataset.type) els.contentType.value = button.dataset.type;
+      showToast("已应用选题");
+    });
+
+    els.prev.addEventListener("click", () => {
+      if (!state.deck) return;
+      state.active = Math.max(0, state.active - 1);
+      render();
+    });
+    els.next.addEventListener("click", () => {
+      if (!state.deck) return;
+      state.active = Math.min(state.deck.cards.length - 1, state.active + 1);
+      render();
+    });
+    els.generate.addEventListener("click", generate);
+    els.recommend.addEventListener("click", recommendTopics);
+    els.saveConfig.addEventListener("click", saveConfig);
+    els.clearConfig.addEventListener("click", clearConfig);
+    els.applyEdit.addEventListener("click", applyEdit);
+    els.saveDraft.addEventListener("click", saveDraft);
+    els.loadDraft.addEventListener("click", loadDraft);
+    els.exportJson.addEventListener("click", exportJson);
+    els.generateImage.addEventListener("click", generateCurrentImage);
+    els.generateAllImages.addEventListener("click", generateAllImages);
+    els.retryMissingImages.addEventListener("click", retryMissingImages);
+    els.pollImageTasks.addEventListener("click", pollAllImageTasks);
+    els.exportPng.addEventListener("click", exportCurrentPng);
+    els.exportAllPng.addEventListener("click", exportAllPng);
+    els.exportPublishPack.addEventListener("click", exportPublishPack);
+    els.exportAllData.addEventListener("click", exportAllData);
+    els.importAllDataButton.addEventListener("click", () => els.importAllData.click());
+    els.importAllData.addEventListener("change", event => {
+      const file = event.target.files?.[0];
+      if (file) importAllDataFile(file);
+      event.target.value = "";
+    });
+    els.clearHospitalData.addEventListener("click", clearCurrentHospitalData);
+    els.copyCaption.addEventListener("click", copyCaption);
+    els.previewCardFrame.addEventListener("click", openLightbox);
+    els.closeLightbox.addEventListener("click", closeLightbox);
+    els.lightbox.addEventListener("click", event => {
+      if (event.target === els.lightbox || event.target.classList.contains("lightbox-body")) closeLightbox();
+    });
+    window.addEventListener("keydown", event => {
+      if (event.key === "Escape" && !els.lightbox.hidden) closeLightbox();
+    });
+    els.primaryColor.addEventListener("input", event => syncColor("primary", event.target.value));
+    els.primaryHex.addEventListener("change", event => syncColor("primary", event.target.value));
+    els.secondaryColor.addEventListener("input", event => syncColor("secondary", event.target.value));
+    els.secondaryHex.addEventListener("change", event => syncColor("secondary", event.target.value));
+    els.logoUpload.addEventListener("change", event => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async () => {
+        state.logoDataUrl = String(reader.result || "");
+        renderLogoPreview();
+        try {
+          await applyLogoBrandColors(state.logoDataUrl);
+          showToast("LOGO 已载入，品牌色已同步");
+        } catch {
+          showToast("LOGO 已载入");
+        }
+        saveConfig({ silent: true });
+        persistCurrentHospital();
+        saveCurrentProject({ silent: true });
+        render();
+      };
+      reader.onerror = () => showToast("LOGO 读取失败");
+      reader.readAsDataURL(file);
+    });
+    els.caption.addEventListener("input", () => {
+      if (state.deck) state.deck.caption = els.caption.value;
+      saveCurrentProject({ silent: true });
+    });
+
+    loadConfig();
+    ensureHospitalLibrary();
+    renderHospitalLibrary();
+    els.hospitalLibrary.hidden = false;
+    els.workspaceApp.hidden = true;
+  </script>
+</body>
+</html>
