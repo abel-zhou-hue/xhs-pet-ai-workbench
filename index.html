@@ -1265,6 +1265,7 @@
     const hospitalKey = "xhs-local-hospitals";
     const activeHospitalKey = "xhs-local-active-hospital";
     const legacyDraftKey = "xhs-local-draft";
+    const appVersion = "2026-05-29-storage-v3";
     const maxStoredLogoLength = 180000;
     const maxStoredProjects = 12;
     const maxStoredHospitals = 20;
@@ -1278,6 +1279,7 @@
 
     function setStatus(message) {
       els.status.textContent = message;
+      els.status.dataset.version = appVersion;
     }
 
     function randomId(prefix = "id") {
@@ -1447,6 +1449,7 @@
     }
 
     function migrateLocalStorage() {
+      handleStorageResetParam();
       const savedConfig = readConfig();
       if (savedConfig.logoDataUrl) {
         const nextConfig = { ...savedConfig };
@@ -1470,6 +1473,24 @@
           active: legacyDraft.active || 0
         }));
       }
+    }
+
+    function handleStorageResetParam() {
+      const params = new URLSearchParams(location.search);
+      if (params.get("resetStorage") !== "1") return;
+      const keepConfig = params.get("keepConfig") !== "0";
+      const configBackup = keepConfig ? localStorage.getItem(configKey) : "";
+      const removed = [];
+      for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+        const key = localStorage.key(index);
+        if (key && key.startsWith("xhs-local-")) {
+          removed.push(key);
+          localStorage.removeItem(key);
+        }
+      }
+      if (configBackup) safeSetLocalStorage(configKey, configBackup);
+      history.replaceState(null, "", location.pathname);
+      showToast(`已清理旧缓存 ${removed.length} 项`);
     }
 
     function saveCurrentProject(options = {}) {
