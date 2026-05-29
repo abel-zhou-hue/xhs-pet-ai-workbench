@@ -1265,6 +1265,9 @@
     const hospitalKey = "xhs-local-hospitals";
     const activeHospitalKey = "xhs-local-active-hospital";
     const legacyDraftKey = "xhs-local-draft";
+    const maxStoredLogoLength = 180000;
+    const maxStoredProjects = 12;
+    const maxStoredHospitals = 20;
 
     function showToast(message) {
       els.toast.textContent = message;
@@ -1284,14 +1287,27 @@
     function readHospitals() {
       try {
         const hospitals = JSON.parse(localStorage.getItem(hospitalKey) || "[]");
-        return Array.isArray(hospitals) ? hospitals : [];
+        return Array.isArray(hospitals) ? sanitizeHospitalsForStorage(hospitals) : [];
       } catch {
         return [];
       }
     }
 
     function writeHospitals(hospitals) {
-      localStorage.setItem(hospitalKey, JSON.stringify(hospitals));
+      const compact = sanitizeHospitalsForStorage(hospitals);
+      if (safeSetLocalStorage(hospitalKey, JSON.stringify(compact))) return true;
+      const withoutLogos = compact.map(hospital => ({ ...hospital, logoDataUrl: "" }));
+      if (safeSetLocalStorage(hospitalKey, JSON.stringify(withoutLogos))) {
+        showToast("浏览器存储已满，已自动移除历史大图 Logo");
+        return true;
+      }
+      const minimal = withoutLogos.slice(0, 8);
+      if (safeSetLocalStorage(hospitalKey, JSON.stringify(minimal))) {
+        showToast("浏览器存储已满，已保留最近医院档案");
+        return true;
+      }
+      showToast("浏览器本地存储已满，请先导出并清理旧项目");
+      return false;
     }
 
     function currentHospital() {
@@ -1309,14 +1325,26 @@
     function readProjects(id = state.currentHospitalId) {
       try {
         const projects = JSON.parse(localStorage.getItem(projectsKeyForHospital(id)) || "[]");
-        return Array.isArray(projects) ? projects : [];
+        return Array.isArray(projects) ? sanitizeProjectsForStorage(projects) : [];
       } catch {
         return [];
       }
     }
 
     function writeProjects(projects, id = state.currentHospitalId) {
-      localStorage.setItem(projectsKeyForHospital(id), JSON.stringify(projects));
+      const compact = sanitizeProjectsForStorage(projects);
+      if (safeSetLocalStorage(projectsKeyForHospital(id), JSON.stringify(compact))) return true;
+      const lighter = compact.slice(0, 5).map(project => ({
+        ...project,
+        raw: null,
+        deck: sanitizeDeckForStorage(project.deck, { stripImageUrls: true })
+      }));
+      if (safeSetLocalStorage(projectsKeyForHospital(id), JSON.stringify(lighter))) {
+        showToast("浏览器存储已满，已保留最近项目并移除历史出图引用");
+        return true;
+      }
+      showToast("浏览器本地存储已满，请导出发布包后清理旧项目");
+      return false;
     }
 
     function currentProject() {
@@ -1331,11 +1359,117 @@
         title: state.deck?.title || data.topic || "未命名图文项目",
         topic: data.topic,
         updatedAt: new Date().toISOString(),
-        input: data,
-        deck: state.deck,
+        input: sanitizeProjectInput(data),
+        deck: sanitizeDeckForStorage(state.deck),
         raw: state.raw,
         active: state.active
       };
+    }
+
+    function safeSetLocalStorage(key, value) {
+      try {
+        localStorage.setItem(key, value);
+        return true;
+      } catch (error) {
+        if (!isQuotaError(error)) throw error;
+        return false;
+      }
+    }
+
+    function isQuotaError(error) {
+      return error?.name === "QuotaExceededError" ||
+        error?.name === "NS_ERROR_DOM_QUOTA_REACHED" ||
+        /quota|exceeded/i.test(error?.message || "");
+    }
+
+    function compactDataUrl(value, maxLength = maxStoredLogoLength) {
+      const text = String(value || "");
+      if (!text.startsWith("data:")) return text;
+      return text.length <= maxLength ? text : "";
+    }
+
+    function sanitizeHospitalForStorage(hospital = {}) {
+      return {
+        id: hospital.id || randomId("hospital"),
+        name: hospital.name || hospital.hospital || "未命名医院",
+        hospital: hospital.hospital || hospital.name || "未命名医院",
+        doctor: hospital.doctor || "宠物医生",
+        pet: hospital.pet || "猫",
+        phone: hospital.phone || "",
+        address: hospital.address || "",
+        services: hospital.services || "",
+        primaryColor: normalizeHex(hospital.primaryColor, "#465a70"),
+        secondaryColor: normalizeHex(hospital.secondaryColor, "#91a6b5"),
+        visualPrompt: hospital.visualPrompt || "",
+        logoDataUrl: compactDataUrl(hospital.logoDataUrl),
+        updatedAt: hospital.updatedAt || new Date().toISOString()
+      };
+    }
+
+    function sanitizeHospitalsForStorage(hospitals) {
+      return (Array.isArray(hospitals) ? hospitals : [])
+        .map(sanitizeHospitalForStorage)
+        .slice(0, maxStoredHospitals);
+    }
+
+    function sanitizeProjectInput(data = {}) {
+      const next = { ...data };
+      delete next.logoDataUrl;
+      delete next.textApiKey;
+      delete next.imageApiKey;
+      return next;
+    }
+
+    function sanitizeDeckForStorage(deck, options = {}) {
+      if (!deck) return deck;
+      const next = structuredClone(deck);
+      if (Array.isArray(next.cards)) {
+        next.cards = next.cards.map(card => {
+          const imageUrl = String(card.generatedImageUrl || "");
+          return {
+            ...card,
+            generatedImageUrl: options.stripImageUrls || imageUrl.startsWith("data:") ? "" : imageUrl
+          };
+        });
+      }
+      return next;
+    }
+
+    function sanitizeProjectsForStorage(projects) {
+      return (Array.isArray(projects) ? projects : [])
+        .map(project => ({
+          ...project,
+          input: sanitizeProjectInput(project.input || {}),
+          deck: sanitizeDeckForStorage(project.deck),
+          raw: project.raw || null
+        }))
+        .slice(0, maxStoredProjects);
+    }
+
+    function migrateLocalStorage() {
+      const savedConfig = readConfig();
+      if (savedConfig.logoDataUrl) {
+        const nextConfig = { ...savedConfig };
+        delete nextConfig.logoDataUrl;
+        safeSetLocalStorage(configKey, JSON.stringify(nextConfig));
+      }
+      const hospitals = readHospitals();
+      if (hospitals.length) {
+        writeHospitals(hospitals);
+        hospitals.forEach(hospital => {
+          const projects = readProjects(hospital.id);
+          if (projects.length) writeProjects(projects, hospital.id);
+        });
+      }
+      const legacyDraft = readDraftForHospital("");
+      if (legacyDraft?.deck) {
+        safeSetLocalStorage(legacyDraftKey, JSON.stringify({
+          input: sanitizeProjectInput(legacyDraft.input || {}),
+          deck: sanitizeDeckForStorage(legacyDraft.deck),
+          raw: legacyDraft.raw || null,
+          active: legacyDraft.active || 0
+        }));
+      }
     }
 
     function saveCurrentProject(options = {}) {
@@ -1375,7 +1509,7 @@
         primaryColor: data.primaryColor,
         secondaryColor: data.secondaryColor,
         visualPrompt: data.visualPrompt,
-        logoDataUrl: data.logoDataUrl,
+        logoDataUrl: compactDataUrl(data.logoDataUrl),
         updatedAt: new Date().toISOString()
       };
     }
@@ -1394,7 +1528,7 @@
         primaryColor: normalizeHex(saved.primaryHex || saved.primaryColor, "#465a70"),
         secondaryColor: normalizeHex(saved.secondaryHex || saved.secondaryColor, "#91a6b5"),
         visualPrompt: saved.visualPrompt || "专业、干净、亲切，适合宠物医院小红书科普卡片。",
-        logoDataUrl: saved.logoDataUrl || "",
+        logoDataUrl: "",
         updatedAt: new Date().toISOString()
       };
     }
@@ -1416,7 +1550,7 @@
       if (index >= 0) hospitals[index] = next;
       else hospitals.unshift(next);
       writeHospitals(hospitals);
-      localStorage.setItem(activeHospitalKey, next.id);
+      safeSetLocalStorage(activeHospitalKey, next.id);
       renderHospitalLibrary();
     }
 
@@ -1463,7 +1597,7 @@
       const hospital = readHospitals().find(item => item.id === id);
       if (!hospital) return showToast("医院档案不存在");
       state.currentHospitalId = id;
-      localStorage.setItem(activeHospitalKey, id);
+      safeSetLocalStorage(activeHospitalKey, id);
       applyHospital(hospital);
       els.hospitalLibrary.hidden = true;
       els.workspaceApp.hidden = false;
@@ -1693,7 +1827,7 @@
         }
         if (saved.textApiKey) els.textApiKey.placeholder = `已保存：${maskKey(saved.textApiKey)}`;
         if (saved.imageApiKey) els.imageApiKey.placeholder = `已保存：${maskKey(saved.imageApiKey)}`;
-        if (saved.logoDataUrl) state.logoDataUrl = saved.logoDataUrl;
+        if (saved.logoDataUrl && !state.logoDataUrl) state.logoDataUrl = compactDataUrl(saved.logoDataUrl);
         syncColor("primary", els.primaryHex.value || els.primaryColor.value, false);
         syncColor("secondary", els.secondaryHex.value || els.secondaryColor.value, false);
         renderLogoPreview();
@@ -1718,10 +1852,12 @@
         primaryHex: normalizeHex(els.primaryHex.value || els.primaryColor.value, "#465a70"),
         secondaryColor: normalizeHex(els.secondaryHex.value || els.secondaryColor.value, "#91a6b5"),
         secondaryHex: normalizeHex(els.secondaryHex.value || els.secondaryColor.value, "#91a6b5"),
-        visualPrompt: els.visualPrompt.value.trim(),
-        logoDataUrl: state.logoDataUrl
+        visualPrompt: els.visualPrompt.value.trim()
       };
-      localStorage.setItem(configKey, JSON.stringify(saved));
+      if (!safeSetLocalStorage(configKey, JSON.stringify(saved))) {
+        showToast("浏览器存储已满，接口配置未保存");
+        return;
+      }
       els.textApiKey.value = "";
       els.imageApiKey.value = "";
       loadConfig();
@@ -1836,6 +1972,29 @@
       els.logoPreview.innerHTML = state.logoDataUrl
         ? `<img src="${state.logoDataUrl}" alt="品牌 LOGO">`
         : "LOGO";
+    }
+
+    async function compressLogoDataUrl(dataUrl) {
+      const source = String(dataUrl || "");
+      if (!source.startsWith("data:")) return source;
+      try {
+        const image = await loadImage(source);
+        const maxSide = 320;
+        const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
+        const width = Math.max(1, Math.round(image.width * scale));
+        const height = Math.max(1, Math.round(image.height * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, width, height);
+        ctx.drawImage(image, 0, 0, width, height);
+        const png = canvas.toDataURL("image/png");
+        if (png.length <= maxStoredLogoLength) return png;
+        return canvas.toDataURL("image/jpeg", .86);
+      } catch {
+        return compactDataUrl(source);
+      }
     }
 
     async function applyLogoBrandColors(dataUrl) {
@@ -2483,14 +2642,15 @@
     function saveDraft() {
       if (!state.deck) return showToast("暂无可保存项目");
       persistCurrentHospital();
-      localStorage.setItem(draftKeyForHospital(), JSON.stringify({
-        input: input(),
-        deck: state.deck,
-        raw: state.raw,
-        active: state.active
+      const snapshot = projectFromCurrent(currentProject() || {});
+      const saved = safeSetLocalStorage(draftKeyForHospital(), JSON.stringify({
+        input: snapshot.input,
+        deck: snapshot.deck,
+        raw: snapshot.raw,
+        active: snapshot.active
       }));
       saveCurrentProject({ silent: true });
-      showToast("项目已保存到当前医院档案");
+      showToast(saved ? "项目已保存到当前医院档案" : "浏览器存储已满，已尽量保存当前项目");
     }
 
     function readDraftForHospital(id = state.currentHospitalId) {
@@ -2505,7 +2665,7 @@
       for (const [key, value] of Object.entries(draft.input || {})) {
         if (els[key] && typeof value !== "object") els[key].value = value;
       }
-      state.logoDataUrl = draft.input?.logoDataUrl || state.logoDataUrl;
+      state.logoDataUrl = compactDataUrl(draft.input?.logoDataUrl || state.logoDataUrl);
       renderLogoPreview();
       state.deck = draft.deck;
       state.raw = draft.raw;
@@ -2881,7 +3041,7 @@
       if (!file) return;
       const reader = new FileReader();
       reader.onload = async () => {
-        state.logoDataUrl = String(reader.result || "");
+        state.logoDataUrl = await compressLogoDataUrl(String(reader.result || ""));
         renderLogoPreview();
         try {
           await applyLogoBrandColors(state.logoDataUrl);
@@ -2902,6 +3062,7 @@
       saveCurrentProject({ silent: true });
     });
 
+    migrateLocalStorage();
     loadConfig();
     ensureHospitalLibrary();
     renderHospitalLibrary();
