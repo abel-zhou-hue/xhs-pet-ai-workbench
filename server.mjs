@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 const port = Number(process.argv[2] || process.env.PORT || 4174);
+const host = process.env.HOST || (process.env.PORT ? "0.0.0.0" : "127.0.0.1");
 const reviewStorePath = join(root, ".data", "reviews.json");
 const aiConfigPath = join(root, ".data", "ai-config.json");
 const textGenerationTimeoutMs = 65000;
@@ -1296,6 +1297,7 @@ const server = createServer(async (req, res) => {
   await handleStatic(req, res);
 });
 
-server.listen(port, "127.0.0.1", () => {
-  console.log(`程程宠物医院工作台: http://127.0.0.1:${port}/`);
+server.listen(port, host, () => {
+  const shownHost = host === "0.0.0.0" ? "127.0.0.1" : host;
+  console.log(`程程宠物医院工作台: http://${shownHost}:${port}/`);
 });

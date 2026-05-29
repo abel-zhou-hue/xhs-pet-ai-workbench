@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: xhs-pet-ai-workbench
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: IMAGE2_API_KEY
+        sync: false
