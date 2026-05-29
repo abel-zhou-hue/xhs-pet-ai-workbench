@@ -1175,7 +1175,7 @@
             <input id="textApiKey" type="password" placeholder="sk-...">
           </div>
           <div class="box">
-            <h2>图片模型（可选）</h2>
+            <h2>图片模型（服务端代理）</h2>
             <label for="imageBaseUrl">Base URL</label>
             <input id="imageBaseUrl" value="https://api.apimart.ai/v1">
             <label for="imageModel">模型</label>
@@ -1206,8 +1206,8 @@
             </div>
           </div>
           <div class="box">
-            <h2>直连状态</h2>
-            <p class="muted" id="corsHint">纯 HTML 直接请求第三方 API，是否可用取决于接口是否允许浏览器跨域访问。</p>
+            <h2>服务端代理状态</h2>
+            <p class="muted" id="corsHint">图片生成会先请求本地 /api，再由服务端请求 APIMart，避免浏览器直连图片 API 的 CORS 限制。</p>
           </div>
         </div>
       </div>
@@ -1737,6 +1737,44 @@
       }
     }
 
+    function requireLocalApi() {
+      if (location.protocol === "file:") {
+        throw new Error("图片生成需要通过本地服务打开：请运行 node server.mjs 后访问 http://127.0.0.1:4174/");
+      }
+      if (location.hostname.endsWith("github.io")) {
+        throw new Error("当前 GitHub Pages 是静态托管，不能运行图片代理接口。image2.0 出图请使用 Node 服务部署，或本地访问 http://127.0.0.1:4174/");
+      }
+    }
+
+    async function saveImageConfigToServer() {
+      requireLocalApi();
+      const saved = readConfig();
+      const payload = {
+        textBaseUrl: saved.textBaseUrl || els.textBaseUrl.value.trim(),
+        textModel: saved.textModel || els.textModel.value.trim(),
+        textApiKey: saved.textApiKey || els.textApiKey.value.trim(),
+        imageBaseUrl: saved.imageBaseUrl || els.imageBaseUrl.value.trim() || "https://api.apimart.ai/v1",
+        imageModel: saved.imageModel || els.imageModel.value.trim() || "gpt-image-2",
+        imageApiKey: saved.imageApiKey || els.imageApiKey.value.trim()
+      };
+      if (!payload.imageApiKey) throw new Error("请先在接口页填写并保存图片 API Key");
+      const response = await fetch("/api/ai-config", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const body = await response.json().catch(async () => ({ error: await response.text() }));
+      if (!response.ok) throw new Error(body.detail || body.error || "图片接口配置保存失败");
+      if (!body.image?.configured) throw new Error("图片 API Key 或 Base URL 未配置成功");
+      return body;
+    }
+
+    function imageProxyUrl(url) {
+      const text = String(url || "");
+      if (!/^https?:\/\//i.test(text) || location.protocol === "file:") return text;
+      return `/api/image-proxy?url=${encodeURIComponent(text)}`;
+    }
+
     function clearConfig() {
       localStorage.removeItem(configKey);
       els.textApiKey.value = "";
@@ -2150,45 +2188,28 @@
 
     async function generateImagePage(index, options = {}) {
       const data = input();
-      const saved = readConfig();
-      const apiKey = saved.imageApiKey || els.imageApiKey.value.trim();
-      const baseUrl = (saved.imageBaseUrl || els.imageBaseUrl.value.trim() || "https://api.apimart.ai/v1").replace(/\/$/, "");
-      const model = saved.imageModel || els.imageModel.value.trim() || "gpt-image-2";
       const card = state.deck.cards[index];
-      if (!apiKey) {
-        showToast("请先在接口页填写图片 API Key");
-        throw new Error("请先在接口页填写图片 API Key");
-      }
       if (card.generatedImageUrl) {
         setStatus(`第 ${index + 1} 页已有 image2.0 成图，已跳过`);
         return;
       }
       setStatus(`image2.0 正在生成第 ${index + 1} / ${state.deck.cards.length} 页...`);
       try {
+        saveConfig({ silent: true });
+        await saveImageConfigToServer();
         if (card.imageTaskId && !card.generatedImageUrl && card.imageStatus !== "failed") {
           await pollImageTask(card.imageTaskId, card, index);
           return;
         }
-        const prompt = buildImagePrompt(card, data);
-        const response = await fetch(`${baseUrl}/images/generations`, {
+        const response = await fetch("/api/visual-style/generate", {
           method: "POST",
-          headers: {
-            "content-type": "application/json",
-            authorization: `Bearer ${apiKey}`
-          },
-          body: JSON.stringify({
-            model,
-            prompt,
-            n: 1,
-            size: "3:4",
-            resolution: "1k"
-          })
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(buildImagePayload(card, index, data))
         });
         const body = await response.json().catch(async () => ({ error: await response.text() }));
-        if (!response.ok) throw new Error(`Image API ${response.status}: ${JSON.stringify(body).slice(0, 240)}`);
-        const first = body.data?.[0] || {};
-        const imageUrl = first.url || (first.b64_json ? `data:image/png;base64,${first.b64_json}` : "");
-        const taskId = first.task_id || first.taskId || "";
+        if (!response.ok) throw new Error(body.detail || body.error || `Image API ${response.status}`);
+        const imageUrl = body.referenceImage?.url || "";
+        const taskId = body.taskId || "";
         if (imageUrl) {
           card.generatedImageUrl = imageUrl;
           card.imageStatus = "completed";
@@ -2198,16 +2219,16 @@
           if (!options.batch) showToast("图片已生成");
         } else if (taskId) {
           card.imageTaskId = taskId;
-          card.imageStatus = "submitted";
+          card.imageStatus = body.taskStatus || "submitted";
           render();
           saveCurrentProject({ silent: true });
           await pollImageTask(taskId, card, index);
         } else {
-          throw new Error("图片接口没有返回图片 URL 或任务 ID");
+          throw new Error(body.error || body.fallbackReason || "图片接口没有返回图片 URL 或任务 ID");
         }
       } catch (error) {
         const message = /Failed to fetch|NetworkError|Load failed/i.test(error.message)
-          ? "浏览器无法直连图片 API，可能是 CORS 或网络限制。"
+          ? "图片代理接口不可用，请确认已通过 node server.mjs 启动并访问 http://127.0.0.1:4174/，或部署了可运行 /api 的 Node 服务"
           : error.message;
         card.imageStatus = "failed";
         setStatus(message);
@@ -2218,20 +2239,14 @@
     }
 
     async function pollImageTask(taskId, card, index = state.active) {
-      const saved = readConfig();
-      const apiKey = saved.imageApiKey || els.imageApiKey.value.trim();
-      const baseUrl = (saved.imageBaseUrl || els.imageBaseUrl.value.trim() || "https://api.apimart.ai/v1").replace(/\/$/, "");
+      requireLocalApi();
       for (let attempt = 0; attempt < 24; attempt += 1) {
         await new Promise(resolve => setTimeout(resolve, attempt ? 5000 : 2000));
-        const response = await fetch(`${baseUrl}/tasks/${encodeURIComponent(taskId)}`, {
-          headers: { authorization: `Bearer ${apiKey}` }
-        });
+        const response = await fetch(`/api/visual-style/tasks/${encodeURIComponent(taskId)}`);
         const body = await response.json().catch(async () => ({ error: await response.text() }));
-        if (!response.ok) throw new Error(`Task API ${response.status}: ${JSON.stringify(body).slice(0, 220)}`);
+        if (!response.ok) throw new Error(body.detail || body.error || `Task API ${response.status}`);
         const data = body.data || body;
-        const images = Array.isArray(data.result?.images)
-          ? data.result.images.flatMap(item => Array.isArray(item.url) ? item.url : item.url ? [item.url] : [])
-          : [];
+        const images = Array.isArray(data.images) ? data.images : [];
         card.imageStatus = data.status || "processing";
         setStatus(`第 ${index + 1} 页 image2.0 任务 ${card.imageStatus}，进度 ${data.progress || 0}%`);
         if (images[0]) {
@@ -2244,7 +2259,47 @@
         }
         if (data.status === "failed") throw new Error(data.error?.message || data.error || "图片任务失败");
       }
-      setStatus("图片任务仍在处理中，可稍后再点 image2.0 当前页继续查询。");
+      setStatus("图片任务仍在处理中，可稍后点击“查询未完成任务”检查进度。");
+    }
+
+    function buildImagePayload(card, index, data) {
+      return {
+        topic: data.topic,
+        pet: data.pet,
+        contentType: data.contentType,
+        sceneStyle: data.style,
+        brand: {
+          hospital: data.hospital,
+          doctor: data.doctor,
+          primaryColor: data.primaryColor,
+          secondaryColor: data.secondaryColor,
+          logoDataUrl: data.logoDataUrl,
+          mood: data.style
+        },
+        visual: {
+          primary: data.primaryColor,
+          secondary: data.secondaryColor,
+          mood: data.style,
+          style: data.style,
+          visualPrompt: data.visualPrompt
+        },
+        hospitalProfile: {
+          services: data.services,
+          contact: [data.phone, data.address].filter(Boolean).join(" · ")
+        },
+        generatedNote: {
+          title: state.deck.title,
+          currentPage: index + 1,
+          currentCard: { ...card, page: index + 1 },
+          cards: state.deck.cards.map((item, pageIndex) => ({ ...item, page: pageIndex + 1 }))
+        },
+        imageModelPlan: {
+          requireImage: true,
+          size: "3:4",
+          resolution: "1k",
+          referenceImages: data.logoDataUrl ? [data.logoDataUrl] : []
+        }
+      };
     }
 
     function buildImagePrompt(card, data) {
@@ -2324,7 +2379,7 @@
       state.active = Math.max(0, Math.min(state.active, deck.cards.length - 1));
       const card = deck.cards[state.active];
       els.card.innerHTML = card.generatedImageUrl ? `
-        <img class="generated-image" src="${escapeAttr(card.generatedImageUrl)}" alt="第 ${state.active + 1} 页 image2.0 成图">
+        <img class="generated-image" src="${escapeAttr(imageProxyUrl(card.generatedImageUrl))}" alt="第 ${state.active + 1} 页 image2.0 成图">
       ` : `
         <div class="card-brand">
           <div class="card-logo">${data.logoDataUrl ? `<img src="${escapeAttr(data.logoDataUrl)}" alt="品牌 LOGO">` : "LOGO"}</div>
@@ -2532,6 +2587,12 @@
       const ctx = canvas.getContext("2d");
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      if (card.generatedImageUrl) {
+        const generated = await loadImage(imageProxyUrl(card.generatedImageUrl));
+        ctx.drawImage(generated, 0, 0, canvas.width, canvas.height);
+        return canvas;
+      }
 
       const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
       gradient.addColorStop(0, mixColor(data.primaryColor, "#ffffff", .92));
