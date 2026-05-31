@@ -915,6 +915,89 @@
       .toolbar { display: grid; gap: 10px; justify-content: stretch; }
       .card-title { font-size: 25px; }
     }
+
+    /* 审核分享模式（外部医生只读视图） */
+    [data-mode="review"] body { background: #f4f5f7; }
+    .review-shell {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 28px 18px 64px;
+      font-family: "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+      color: #1f2429;
+    }
+    .review-head {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 22px 24px;
+      box-shadow: 0 4px 24px rgba(15, 23, 42, .06);
+      margin-bottom: 18px;
+    }
+    .review-head h1 { margin: 0 0 6px; font-size: 22px; }
+    .review-head .meta { margin: 0; color: #6b7480; font-size: 14px; }
+    .review-head .warn { margin: 10px 0 0; color: #b35d00; font-size: 13px; background: #fff5e5; border-radius: 8px; padding: 8px 12px; }
+    .review-cards { display: flex; flex-direction: column; gap: 18px; }
+    .review-card {
+      background: #ffffff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(15, 23, 42, .06);
+    }
+    .review-card-img {
+      background: #eef0f3;
+      aspect-ratio: 3 / 4;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .review-card-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .review-card-placeholder { color: #94a0ad; font-size: 14px; }
+    .review-card-text { padding: 18px 22px 22px; }
+    .review-card-label { font-size: 12px; color: #8b94a0; letter-spacing: .04em; }
+    .review-card-text h2 { margin: 6px 0 4px; font-size: 18px; }
+    .review-card-subtitle { margin: 4px 0 12px; color: #4b5560; font-size: 14px; }
+    .review-card-text ul { margin: 8px 0; padding-left: 20px; color: #2c333a; font-size: 14px; }
+    .review-card-text ul li { margin: 4px 0; }
+    .review-card-insight, .review-card-note {
+      margin: 10px 0 0;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .review-card-insight { background: #eef6ff; color: #1f4f8a; }
+    .review-card-note { background: #f5efff; color: #5a3aa4; }
+    .review-meta {
+      margin-top: 18px;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 18px 22px;
+      box-shadow: 0 4px 24px rgba(15, 23, 42, .06);
+    }
+    .review-meta h3 { margin: 14px 0 6px; font-size: 14px; color: #4b5560; }
+    .review-meta h3:first-child { margin-top: 0; }
+    .review-meta pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #f6f7f9;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin: 0;
+    }
+    .review-meta .hashtags { color: #1f6fa8; font-size: 13px; word-break: break-word; }
+    .review-foot { margin-top: 18px; color: #94a0ad; font-size: 12px; text-align: center; }
+    .review-error {
+      max-width: 520px;
+      margin: 80px auto;
+      padding: 32px;
+      background: #fff;
+      border-radius: 16px;
+      font-family: "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+      text-align: center;
+      box-shadow: 0 4px 24px rgba(15, 23, 42, .06);
+    }
+    .review-error h1 { font-size: 18px; color: #b91c1c; margin: 0 0 8px; }
+    .review-error p { color: #6b7480; font-size: 14px; margin: 0; }
   </style>
 </head>
 <body>
@@ -1134,6 +1217,7 @@
             <button class="mini" id="exportAllPng" type="button">导出全部 PNG</button>
             <button class="mini" id="exportJson" type="button">导出 JSON</button>
             <button class="mini" id="exportPublishPack" type="button">导出发布包</button>
+            <button class="mini primary" id="shareReview" type="button">复制审核链接</button>
           </div>
         </div>
         <div class="outline" id="outline"></div>
@@ -3173,6 +3257,163 @@
       return escapeHtml(value).replace(/`/g, "&#96;");
     }
 
+    // ===== 审核分享链接（URL fragment 携带 deck 数据） =====
+    async function compressToBase64Url(text) {
+      if (typeof CompressionStream === "undefined") {
+        // 老浏览器降级：直接 base64url
+        return btoa(unescape(encodeURIComponent(text))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+      }
+      const stream = new Blob([text]).stream().pipeThrough(new CompressionStream("deflate-raw"));
+      const buf = await new Response(stream).arrayBuffer();
+      const bytes = new Uint8Array(buf);
+      let bin = "";
+      for (let i = 0; i < bytes.length; i += 1) bin += String.fromCharCode(bytes[i]);
+      return "z" + btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    }
+
+    async function decompressFromBase64Url(payload) {
+      const isCompressed = payload.startsWith("z");
+      const body = isCompressed ? payload.slice(1) : payload;
+      const b64 = body.replace(/-/g, "+").replace(/_/g, "/");
+      const padded = b64 + "=".repeat((4 - b64.length % 4) % 4);
+      const bin = atob(padded);
+      const bytes = Uint8Array.from(bin, ch => ch.charCodeAt(0));
+      if (!isCompressed || typeof DecompressionStream === "undefined") {
+        return decodeURIComponent(escape(atob(padded)));
+      }
+      const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+      return new Response(stream).text();
+    }
+
+    function buildReviewPayload() {
+      if (!state.deck) return null;
+      const data = input();
+      return {
+        v: 1,
+        title: state.deck.title || "",
+        hospital: data.hospital || "",
+        doctor: data.doctor || "",
+        topic: data.topic || "",
+        primaryColor: data.primaryColor || "",
+        secondaryColor: data.secondaryColor || "",
+        caption: state.deck.caption || "",
+        titles: Array.isArray(state.deck.titles) ? state.deck.titles : [],
+        hashtags: Array.isArray(state.deck.hashtags) ? state.deck.hashtags : [],
+        cards: (state.deck.cards || []).map((card, index) => ({
+          page: index + 1,
+          label: card.label || "",
+          title: card.title || "",
+          subtitle: card.subtitle || "",
+          points: Array.isArray(card.points) ? card.points : [],
+          insight: card.insight || "",
+          doctorNote: card.doctorNote || "",
+          generatedImageUrl: card.generatedImageUrl || ""
+        }))
+      };
+    }
+
+    async function shareReview() {
+      if (!state.deck) return showToast("请先生成文案");
+      try {
+        const payload = buildReviewPayload();
+        const json = JSON.stringify(payload);
+        const encoded = await compressToBase64Url(json);
+        const url = `${location.origin}${location.pathname}#review=${encoded}`;
+        const hasImage = payload.cards.some(card => card.generatedImageUrl);
+        try {
+          await navigator.clipboard.writeText(url);
+          const tip = hasImage
+            ? `审核链接已复制（${url.length} 字符）。图片由 image2.0 临时托管，约 24 小时内有效。`
+            : `审核链接已复制（${url.length} 字符）。注意：当前页未生成图片，医生看到的是占位。`;
+          showToast(tip);
+          setStatus(tip);
+        } catch (clipError) {
+          window.prompt("请手动复制审核链接", url);
+        }
+        if (url.length > 18000) {
+          showToast("链接较长，部分聊天工具可能截断。建议同时导出发布包作为备份。");
+        }
+      } catch (error) {
+        const message = `生成审核链接失败：${error?.message || error}`;
+        setStatus(message);
+        showToast(message);
+      }
+    }
+
+    function renderReviewMode(payload) {
+      const title = payload.title || "图文审核";
+      const hospital = payload.hospital || "";
+      const doctor = payload.doctor || "";
+      const topic = payload.topic || "";
+      document.title = `${hospital ? hospital + " · " : ""}${title} · 审核`;
+      document.documentElement.dataset.mode = "review";
+      const cards = Array.isArray(payload.cards) ? payload.cards : [];
+      const cardsHtml = cards.map(card => `
+        <article class="review-card">
+          <div class="review-card-img">
+            ${card.generatedImageUrl
+              ? `<img src="${escapeAttr(card.generatedImageUrl)}" alt="第 ${card.page} 页" loading="lazy" referrerpolicy="no-referrer">`
+              : `<div class="review-card-placeholder">第 ${card.page} 页未生成图片</div>`}
+          </div>
+          <div class="review-card-text">
+            <div class="review-card-label">第 ${card.page} 页${card.label ? " · " + escapeHtml(card.label) : ""}</div>
+            <h2>${escapeHtml(card.title)}</h2>
+            ${card.subtitle ? `<p class="review-card-subtitle">${escapeHtml(card.subtitle)}</p>` : ""}
+            ${Array.isArray(card.points) && card.points.length ? `<ul>${card.points.map(point => `<li>${escapeHtml(point)}</li>`).join("")}</ul>` : ""}
+            ${card.insight ? `<p class="review-card-insight"><strong>解释：</strong>${escapeHtml(card.insight)}</p>` : ""}
+            ${card.doctorNote ? `<p class="review-card-note"><strong>医生提示：</strong>${escapeHtml(card.doctorNote)}</p>` : ""}
+          </div>
+        </article>
+      `).join("");
+      const hashtagText = (payload.hashtags || [])
+        .map(tag => String(tag).startsWith("#") ? tag : `#${tag}`)
+        .map(escapeHtml)
+        .join(" ");
+      document.body.innerHTML = `
+        <main class="review-shell">
+          <header class="review-head">
+            <h1>${escapeHtml(title)}</h1>
+            <p class="meta">${escapeHtml([hospital, doctor, topic].filter(Boolean).join(" · "))}</p>
+            <p class="warn">⚠️ 图片由 image2.0 临时托管，链接约 24 小时内有效。建议尽快审核。</p>
+          </header>
+          <section class="review-cards">${cardsHtml}</section>
+          <section class="review-meta">
+            <h3>Caption</h3>
+            <pre>${escapeHtml(payload.caption || "")}</pre>
+            <h3>Hashtags</h3>
+            <p class="hashtags">${hashtagText}</p>
+            ${Array.isArray(payload.titles) && payload.titles.length ? `<h3>标题备选</h3><ul style="margin:0;padding-left:20px;font-size:13px;color:#2c333a">${payload.titles.map(t => `<li>${escapeHtml(t)}</li>`).join("")}</ul>` : ""}
+          </section>
+          <footer class="review-foot">只读审核视图 · 如需修改请联系内容方</footer>
+        </main>
+      `;
+    }
+
+    function renderReviewError(message) {
+      document.documentElement.dataset.mode = "review";
+      document.body.innerHTML = `
+        <div class="review-error">
+          <h1>审核链接解析失败</h1>
+          <p>${escapeHtml(message || "链接可能被截断或损坏。请联系发送人重新生成。")}</p>
+        </div>
+      `;
+    }
+
+    async function tryEnterReviewMode() {
+      const match = location.hash.match(/^#review=(.+)$/);
+      if (!match) return false;
+      try {
+        const json = await decompressFromBase64Url(decodeURIComponent(match[1]));
+        const payload = JSON.parse(json);
+        if (!payload || !Array.isArray(payload.cards)) throw new Error("无效的审核数据");
+        renderReviewMode(payload);
+        return true;
+      } catch (error) {
+        renderReviewError(error?.message || String(error));
+        return true; // 已渲染错误页，跳过常规 init
+      }
+    }
+
     document.querySelectorAll(".tab").forEach(button => {
       button.addEventListener("click", () => {
         document.querySelectorAll(".tab").forEach(item => item.classList.remove("active"));
@@ -3248,6 +3489,7 @@
     els.exportAllPng.addEventListener("click", exportAllPng);
     els.exportPublishPack.addEventListener("click", exportPublishPack);
     els.exportAllData.addEventListener("click", exportAllData);
+    if (els.shareReview) els.shareReview.addEventListener("click", shareReview);
     els.importAllDataButton.addEventListener("click", () => els.importAllData.click());
     els.importAllData.addEventListener("change", event => {
       const file = event.target.files?.[0];
@@ -3294,12 +3536,16 @@
       saveCurrentProject({ silent: true });
     });
 
-    migrateLocalStorage();
-    loadConfig();
-    ensureHospitalLibrary();
-    renderHospitalLibrary();
-    els.hospitalLibrary.hidden = false;
-    els.workspaceApp.hidden = true;
+    (async function bootstrap() {
+      // 审核模式：URL 带 #review=...，直接进入只读视图，跳过工作台 init
+      if (await tryEnterReviewMode()) return;
+      migrateLocalStorage();
+      loadConfig();
+      ensureHospitalLibrary();
+      renderHospitalLibrary();
+      els.hospitalLibrary.hidden = false;
+      els.workspaceApp.hidden = true;
+    })();
   </script>
 </body>
 </html>
