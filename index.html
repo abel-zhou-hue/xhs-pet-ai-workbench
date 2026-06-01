@@ -3312,27 +3312,77 @@
       };
     }
 
+    function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      return fetch(url, { ...options, signal: controller.signal })
+        .finally(() => clearTimeout(timer));
+    }
+
+    async function shortenUrl(longUrl) {
+      // 1) TinyURL（主）：GET，永久短链
+      try {
+        const response = await fetchWithTimeout(
+          `https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`,
+          { method: "GET" }
+        );
+        if (response.ok) {
+          const text = (await response.text()).trim();
+          if (/^https?:\/\/[^\s]+$/.test(text) && text.length < longUrl.length) {
+            return { url: text, provider: "tinyurl" };
+          }
+        }
+      } catch (e) { /* 降级 */ }
+      // 2) spoo.me（备）：POST，返回 JSON
+      try {
+        const response = await fetchWithTimeout("https://spoo.me/", {
+          method: "POST",
+          headers: { "content-type": "application/x-www-form-urlencoded", accept: "application/json" },
+          body: new URLSearchParams({ url: longUrl }).toString()
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data?.short_url && /^https?:\/\//.test(data.short_url)) {
+            return { url: data.short_url, provider: "spoo.me" };
+          }
+        }
+      } catch (e) { /* 降级 */ }
+      return null;
+    }
+
     async function shareReview() {
       if (!state.deck) return showToast("请先生成文案");
       try {
         const payload = buildReviewPayload();
         const json = JSON.stringify(payload);
         const encoded = await compressToBase64Url(json);
-        const url = `${location.origin}${location.pathname}#review=${encoded}`;
+        const longUrl = `${location.origin}${location.pathname}#review=${encoded}`;
         const hasImage = payload.cards.some(card => card.generatedImageUrl);
+
+        if (location.protocol === "file:") {
+          setStatus("当前是本地文件打开，链接含 file:// 路径，发出去医生无法访问。请在 GitHub Pages 上点这个按钮再分享。");
+          showToast("请在 GitHub Pages 域名下分享，本地 file:// 链接无效");
+          return;
+        }
+
+        setStatus("正在缩短审核链接...");
+        const short = await shortenUrl(longUrl);
+        const finalUrl = short ? short.url : longUrl;
+
         try {
-          await navigator.clipboard.writeText(url);
-          const tip = hasImage
-            ? `审核链接已复制（${url.length} 字符）。图片由 image2.0 临时托管，约 24 小时内有效。`
-            : `审核链接已复制（${url.length} 字符）。注意：当前页未生成图片，医生看到的是占位。`;
-          showToast(tip);
-          setStatus(tip);
+          await navigator.clipboard.writeText(finalUrl);
         } catch (clipError) {
-          window.prompt("请手动复制审核链接", url);
+          window.prompt("请手动复制审核链接", finalUrl);
         }
-        if (url.length > 18000) {
-          showToast("链接较长，部分聊天工具可能截断。建议同时导出发布包作为备份。");
+
+        let tip;
+        if (short) {
+          tip = `审核短链已复制（${finalUrl.length} 字符，原始 ${longUrl.length}）。${hasImage ? "图片约 24 小时内有效。" : "注意：未生成图片，医生看到占位。"}`;
+        } else {
+          tip = `短链服务暂不可用，已复制长链（${longUrl.length} 字符），可正常发送但较长。${hasImage ? "图片约 24 小时内有效。" : ""}`;
         }
+        showToast(tip);
+        setStatus(tip);
       } catch (error) {
         const message = `生成审核链接失败：${error?.message || error}`;
         setStatus(message);
