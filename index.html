@@ -1259,11 +1259,17 @@
             <input id="textApiKey" type="password" placeholder="sk-...">
           </div>
           <div class="box">
-            <h2>图片模型（服务端代理）</h2>
+            <h2>图片模型（浏览器直连 APIMart）</h2>
             <label for="imageBaseUrl">Base URL</label>
             <input id="imageBaseUrl" value="https://api.apimart.ai/v1">
             <label for="imageModel">模型</label>
             <input id="imageModel" value="gpt-image-2">
+            <label for="imageResolution">分辨率</label>
+            <select id="imageResolution">
+              <option value="1k">1K（默认 · 速度最快、费用最低）</option>
+              <option value="2k">2K（高清 · 适合小红书发布）</option>
+              <option value="4k">4K（超清 · 速度最慢、费用最高）</option>
+            </select>
             <label for="imageApiKey">API Key</label>
             <input id="imageApiKey" type="password" placeholder="sk-...">
           </div>
@@ -1968,6 +1974,7 @@
         textApiKey: els.textApiKey.value.trim() || readConfig().textApiKey || "",
         imageBaseUrl: els.imageBaseUrl.value.trim(),
         imageModel: els.imageModel.value.trim(),
+        imageResolution: (els.imageResolution?.value || "1k").trim(),
         imageApiKey: els.imageApiKey.value.trim() || readConfig().imageApiKey || "",
         hospital: els.hospital.value.trim(),
         doctor: els.doctor.value.trim(),
@@ -2030,6 +2037,11 @@
     function normalizeHex(value, fallback) {
       const text = String(value || "").trim();
       return /^#[0-9a-f]{6}$/i.test(text) ? text : fallback;
+    }
+
+    function normalizeImageResolution(value) {
+      const text = String(value || "").trim().toLowerCase();
+      return ["1k", "2k", "4k"].includes(text) ? text : "1k";
     }
 
     function syncColor(type, value, shouldRender = true) {
@@ -2600,7 +2612,8 @@
         setStatus(`第 ${index + 1} 页已有 image2.0 成图，已跳过`);
         return;
       }
-      setStatus(`image2.0 正在生成第 ${index + 1} / ${state.deck.cards.length} 页...`);
+      const resolutionLabel = normalizeImageResolution(els.imageResolution?.value).toUpperCase();
+      setStatus(`image2.0 正在以 ${resolutionLabel} 生成第 ${index + 1} / ${state.deck.cards.length} 页...`);
       try {
         saveConfig({ silent: true });
         if (card.imageTaskId && !card.generatedImageUrl && card.imageStatus !== "failed") {
@@ -2695,7 +2708,7 @@
         imageModelPlan: {
           requireImage: true,
           size: "3:4",
-          resolution: "1k",
+          resolution: normalizeImageResolution(els.imageResolution?.value || readConfig().imageResolution),
           referenceImages: collectReferenceImages(index, data)
         }
       };
