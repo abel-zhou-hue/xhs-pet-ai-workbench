@@ -2300,9 +2300,11 @@
         const body = JSON.parse(text);
         return parseJson(body.choices?.[0]?.message?.content || "");
       } catch (error) {
-        if (error.name === "AbortError") throw new Error("请求超时，请稍后重试或换用更快的模型");
+        if (error.name === "AbortError") throw new Error("DeepSeek 请求超时，请稍后重试或换用更快的模型");
         if (/Failed to fetch|NetworkError|Load failed/i.test(error.message)) {
-          throw new Error("浏览器无法直连 API，可能是 CORS 或网络限制。请确认该 API 支持网页跨域请求。");
+          let host = "";
+          try { host = new URL(baseUrl).host; } catch {}
+          throw new Error(`浏览器无法连接 DeepSeek 服务器${host ? `（${host}）` : ""}。这是网络层问题，不是工作台 bug：① DeepSeek 是境外服务，国内直连可能被阻断 → 开代理/VPN ② Base URL 写错也会出这个错 → 检查接口页 ③ 换网络（手机热点）对比测试。Console 里看到的 ERR_CONNECTION_TIMED_OUT / ERR_NAME_NOT_RESOLVED 是同一原因。`);
         }
         throw error;
       } finally {
@@ -2425,7 +2427,9 @@
       } catch (error) {
         if (error.name === "AbortError") throw new Error("image2.0 提交超时，请稍后重试");
         if (/Failed to fetch|NetworkError|Load failed/i.test(error.message)) {
-          throw new Error("浏览器无法直连 image2.0 接口（可能是网络、CORS 或 Base URL 错误）");
+          let host = "";
+          try { host = new URL(config.baseUrl).host; } catch {}
+          throw new Error(`浏览器无法连接 image2.0 服务器${host ? `（${host}）` : ""}。这是网络层问题，不是工作台 bug：① APIMart 是境外服务，国内直连常被阻断 → 开代理/VPN ② Base URL 写错也会出这个错 → 检查接口页 ③ 换网络（手机热点）对比测试。Console 里 ERR_CONNECTION_TIMED_OUT 是同一原因。`);
         }
         throw error;
       } finally {
@@ -2460,7 +2464,7 @@
       } catch (error) {
         if (error.name === "AbortError") return { taskId, status: "processing", progress: 0, images: [], error: "查询超时" };
         if (/Failed to fetch|NetworkError|Load failed/i.test(error.message)) {
-          throw new Error("浏览器无法直连 image2.0 查询接口");
+          throw new Error("浏览器无法连接 image2.0 查询接口（同样多半是境外网络阻断，请确认代理在跑）");
         }
         throw error;
       } finally {
