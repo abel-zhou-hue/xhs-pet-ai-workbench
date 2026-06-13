@@ -3009,72 +3009,66 @@
       throw new Error(`所有下载路径均失败：${errors.slice(0, 3).join("；")}`);
     }
 
-    // 弹一个新窗口列出所有图，让用户右键"图片另存为"
-    // 必须在用户点击的同步事件里调用，否则会被 popup blocker 拦
-    function openGalleryWindow() {
-      try {
-        const win = window.open("", "_blank", "width=900,height=900");
-        if (!win || win.closed) return null;
-        win.document.open();
-        win.document.write(`<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>原图下载</title><style>body{font-family:system-ui,-apple-system,sans-serif;padding:30px;background:#f4f5f7;color:#1f2429;text-align:center;margin:0;}h1{font-size:16px;}</style></head><body><h1>正在准备图片…请稍候</h1></body></html>`);
-        win.document.close();
-        return win;
-      } catch {
-        return null;
-      }
-    }
-
-    function fillGalleryWindow(win, title, items) {
-      if (!win || win.closed) return false;
-      const safeTitle = escapeHtml(title || "原图下载");
-      const cards = items.map(item => {
+    // 在当前页面弹一个"原图下载" modal —— <img> 渲染原图不受 CORS 限制
+    // 用 modal 而非 window.open，彻底避开 popup blocker
+    function openImageGalleryModal(title, items) {
+      // 复用同一个 modal 容器，避免叠加
+      let overlay = document.getElementById("imageGalleryOverlay");
+      if (overlay) overlay.remove();
+      overlay = document.createElement("div");
+      overlay.id = "imageGalleryOverlay";
+      overlay.setAttribute("role", "dialog");
+      overlay.setAttribute("aria-label", "原图下载");
+      overlay.innerHTML = `
+        <style>
+          #imageGalleryOverlay{position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:99999;display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto;font-family:system-ui,-apple-system,"PingFang SC",sans-serif;}
+          #imageGalleryOverlay .modal{background:#fff;border-radius:14px;max-width:780px;width:100%;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+          #imageGalleryOverlay h2{font-size:18px;margin:0 0 6px;color:#1f2429;}
+          #imageGalleryOverlay .tip{background:#fff5e5;padding:12px 14px;border-radius:8px;color:#b35d00;font-size:13px;line-height:1.55;margin:10px 0 18px;}
+          #imageGalleryOverlay .tip strong{color:#222;}
+          #imageGalleryOverlay .gal-card{background:#f7f8fa;padding:14px;border-radius:10px;margin:12px 0;}
+          #imageGalleryOverlay .gal-card h3{font-size:13px;margin:0 0 8px;color:#4b5560;font-weight:600;}
+          #imageGalleryOverlay .gal-card img{max-width:100%;display:block;border-radius:6px;background:#eef0f3;min-height:60px;}
+          #imageGalleryOverlay .gal-card .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:10px;font-size:12px;color:#6b7480;}
+          #imageGalleryOverlay .gal-card a{padding:6px 12px;background:#1f6fa8;color:#fff;border-radius:5px;text-decoration:none;font-size:12px;}
+          #imageGalleryOverlay .gal-card a:hover{background:#185988;}
+          #imageGalleryOverlay .close-btn{position:sticky;top:0;float:right;background:#eef0f3;border:0;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;color:#4b5560;}
+          #imageGalleryOverlay .close-btn:hover{background:#dde1e6;}
+          #imageGalleryOverlay code{background:#eef0f3;padding:1px 6px;border-radius:3px;font-size:11px;}
+        </style>
+        <div class="modal">
+          <button class="close-btn" type="button" aria-label="关闭">×</button>
+          <h2>${escapeHtml(title || "原图下载")}</h2>
+          <p class="tip">⚠️ image2.0 服务方近期换了图床，且未对浏览器开放跨域。<br><strong>请在每张图上右键，选"图片另存为"</strong>，按下方提示文件名保存即可。</p>
+          <div class="gal-body"></div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+      const body = overlay.querySelector(".gal-body");
+      for (const item of items) {
         const url = item.card?.generatedImageUrl;
-        const label = escapeHtml([item.card?.label, item.card?.title].filter(Boolean).join("｜") || "");
+        const card = document.createElement("div");
+        card.className = "gal-card";
         if (!url) {
-          return `<div class="card empty"><h2>第 ${item.index + 1} 页未生成图</h2></div>`;
+          card.innerHTML = `<h3>第 ${item.index + 1} 页未生成图</h3>`;
+        } else {
+          const filename = `${safeFileName(title)}-${item.index + 1}.png`;
+          const label = [item.card?.label, item.card?.title].filter(Boolean).join("｜");
+          card.innerHTML = `
+            <h3>第 ${item.index + 1} 页${label ? " · " + escapeHtml(label) : ""}</h3>
+            <img src="${escapeAttr(url)}" referrerpolicy="no-referrer" alt="第 ${item.index + 1} 页">
+            <div class="row">
+              <a href="${escapeAttr(url)}" target="_blank" rel="noopener" download="${escapeAttr(filename)}">在新标签打开</a>
+              <span>建议文件名：<code>${escapeHtml(filename)}</code></span>
+            </div>
+          `;
         }
-        const filename = escapeAttr(`${safeFileName(title)}-${item.index + 1}.png`);
-        return `<div class="card">
-  <h2>第 ${item.index + 1} 页 · ${label}</h2>
-  <img src="${escapeAttr(url)}" referrerpolicy="no-referrer" alt="第 ${item.index + 1} 页">
-  <div class="row">
-    <a href="${escapeAttr(url)}" target="_blank" rel="noopener" download="${filename}">在新标签打开</a>
-    <span class="muted">右键图片 → "图片另存为" → 保存为 <code>${filename}</code></span>
-  </div>
-</div>`;
-      }).join("");
-      const html = `<!doctype html><html lang="zh-CN"><head>
-<meta charset="utf-8">
-<title>${safeTitle} · 原图下载</title>
-<style>
-*{box-sizing:border-box;}
-body{font-family:system-ui,-apple-system,"PingFang SC",sans-serif;padding:20px;background:#f4f5f7;color:#1f2429;max-width:820px;margin:0 auto;}
-h1{font-size:20px;margin:0 0 8px;}
-.tip{background:#fff5e5;padding:14px 16px;border-radius:10px;color:#b35d00;margin:0 0 20px;line-height:1.55;}
-.tip strong{color:#222;}
-.card{background:#fff;padding:18px;margin:16px 0;border-radius:12px;box-shadow:0 4px 18px rgba(15,23,42,.05);}
-.card h2{font-size:14px;margin:0 0 12px;color:#4b5560;font-weight:600;}
-.card.empty{color:#94a0ad;text-align:center;padding:30px;}
-.card img{max-width:100%;display:block;border-radius:8px;}
-.row{display:flex;align-items:center;gap:14px;margin-top:12px;flex-wrap:wrap;}
-.row a{display:inline-block;padding:8px 14px;background:#1f6fa8;color:#fff;border-radius:6px;text-decoration:none;font-size:13px;}
-.row a:hover{background:#185988;}
-.muted{color:#6b7480;font-size:12px;}
-code{background:#eef0f3;padding:2px 6px;border-radius:4px;font-size:12px;}
-</style>
-</head><body>
-<h1>${safeTitle} · 原图下载</h1>
-<p class="tip">⚠️ 由于 image2.0 服务方近期换了图床且未对外开放跨域，浏览器无法自动批量保存。<br><strong>请在每张图上右键，选择"图片另存为"</strong>，按提示文件名保存即可。</p>
-${cards}
-</body></html>`;
-      try {
-        win.document.open();
-        win.document.write(html);
-        win.document.close();
-        return true;
-      } catch {
-        return false;
+        body.appendChild(card);
       }
+      const close = () => overlay.remove();
+      overlay.querySelector(".close-btn").addEventListener("click", close);
+      overlay.addEventListener("click", e => { if (e.target === overlay) close(); });
+      return true;
     }
 
     async function exportSinglePagePng(index) {
@@ -3098,23 +3092,18 @@ ${cards}
 
     async function exportCurrentPng() {
       if (!state.deck) return showToast("请先生成文案");
-      // 关键：在同步代码里立即开窗口，保留用户激活，避免 popup blocker
-      const gallery = state.deck.cards[state.active]?.generatedImageUrl ? openGalleryWindow() : null;
       try {
         const result = await exportSinglePagePng(state.active);
         if (result.ok) {
-          if (gallery) try { gallery.close(); } catch {}
           showToast(`第 ${state.active + 1} 页 PNG 已${result.mode === "remote" ? "下载（原图）" : "导出"}`);
         } else {
-          if (gallery) {
-            fillGalleryWindow(gallery, state.deck.title, [{ index: state.active, card: state.deck.cards[state.active] }]);
-            showToast(`直接下载失败，已弹出原图窗口，请右键"图片另存为"`);
-          } else {
-            showToast("直接下载失败，且弹窗被拦截。请允许弹窗后重试，或在左侧预览面板右键图片另存");
-          }
+          // 自动下载失败 → 弹页内 modal，用户右键另存。不依赖 popup，不会被 blocker 拦
+          openImageGalleryModal(state.deck.title, [{ index: state.active, card: state.deck.cards[state.active] }]);
+          const tip = `直接下载失败（${result.error || "代理全部失败"}）。已在页面里弹出原图，请右键"图片另存为"`;
+          setStatus(tip);
+          showToast(tip);
         }
       } catch (error) {
-        if (gallery) try { gallery.close(); } catch {}
         const message = error?.message || "PNG 导出失败";
         setStatus(message);
         showToast(message);
@@ -3123,9 +3112,6 @@ ${cards}
 
     async function exportAllPng() {
       if (!state.deck) return { ok: 0, fail: 0, errors: [] };
-      // 关键：先开窗口（用户激活窗口期内），失败页待会儿往里写
-      const hasAnyRemote = state.deck.cards.some(card => card.generatedImageUrl);
-      const gallery = hasAnyRemote ? openGalleryWindow() : null;
       showToast("正在导出全部 PNG，请稍候");
       let ok = 0;
       let fail = 0;
@@ -3148,19 +3134,13 @@ ${cards}
           errors.push(`第 ${index + 1} 页：${error?.message || "未知错误"}`);
         }
       }
-      if (fail && gallery) {
-        const filled = fillGalleryWindow(gallery, state.deck.title, failedItems);
-        const summary = filled
-          ? `PNG 自动下载 ${ok}/${ok + fail} 成功；剩 ${fail} 页已在新窗口列出，请右键"图片另存为"`
-          : `${fail} 页自动下载失败但新窗口写入失败：${errors[0]}`;
-        setStatus(summary);
-        showToast(summary);
-      } else if (fail) {
-        const summary = `${fail} 页失败，且浏览器拦截了弹窗。请允许 ${location.host} 弹窗后重试，或在预览面板右键图片另存`;
+      if (fail) {
+        // 失败页弹页内 modal —— 不依赖 popup，不会被 blocker 拦
+        openImageGalleryModal(state.deck.title, failedItems);
+        const summary = `PNG 自动下载 ${ok}/${ok + fail} 成功；剩 ${fail} 页已在页面里列出，请右键"图片另存为"`;
         setStatus(summary);
         showToast(summary);
       } else if (ok) {
-        if (gallery) try { gallery.close(); } catch {}
         showToast(`全部 ${ok} 页 PNG 已下载（原图）`);
       }
       return { ok, fail, errors };
