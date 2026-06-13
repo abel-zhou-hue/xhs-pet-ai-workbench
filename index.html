@@ -2975,12 +2975,14 @@
     }
 
     // 多代理兜底下载远端图（绕开 APIMart 新 CDN 没 CORS 头的问题）
-    async function fetchImageBlob(url, timeoutMs = 12000) {
+    async function fetchImageBlob(url, timeoutMs = 10000) {
+      const noProto = url.replace(/^https?:\/\//, "");
       const attempts = [
-        url,                                                                         // 直连（万一 CDN 后续开了 CORS）
-        `https://corsproxy.io/?${encodeURIComponent(url)}`,
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-        `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`
+        url,                                                                              // 直连（万一 CDN 开了 CORS）
+        `https://images.weserv.nl/?url=${encodeURIComponent(noProto)}`,                   // 图片专用代理（Cloudflare）
+        `https://wsrv.nl/?url=${encodeURIComponent(noProto)}`,                            // weserv 镜像
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,                  // 通用代理
+        `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`             // 通用代理备
       ];
       const errors = [];
       for (const attemptUrl of attempts) {
@@ -2994,9 +2996,8 @@
             continue;
           }
           const blob = await response.blob();
-          // 防御：代理失败时常常返回一个 HTML 错误页，size 很小且 content-type 不是 image
           if (blob.size < 512 || (blob.type && !blob.type.startsWith("image/") && blob.type !== "application/octet-stream")) {
-            errors.push(`${new URL(attemptUrl).host} 返回非图片内容（${blob.type || "unknown"}, ${blob.size}B）`);
+            errors.push(`${new URL(attemptUrl).host} 非图片（${blob.type || "?"}, ${blob.size}B）`);
             continue;
           }
           return blob;
@@ -3008,24 +3009,87 @@
       throw new Error(`所有下载路径均失败：${errors.slice(0, 3).join("；")}`);
     }
 
-    async function exportSinglePagePng(index, options = {}) {
+    // 弹一个新窗口列出所有图，让用户右键"图片另存为"
+    // 必须在用户点击的同步事件里调用，否则会被 popup blocker 拦
+    function openGalleryWindow() {
+      try {
+        const win = window.open("", "_blank", "width=900,height=900");
+        if (!win || win.closed) return null;
+        win.document.open();
+        win.document.write(`<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>原图下载</title><style>body{font-family:system-ui,-apple-system,sans-serif;padding:30px;background:#f4f5f7;color:#1f2429;text-align:center;margin:0;}h1{font-size:16px;}</style></head><body><h1>正在准备图片…请稍候</h1></body></html>`);
+        win.document.close();
+        return win;
+      } catch {
+        return null;
+      }
+    }
+
+    function fillGalleryWindow(win, title, items) {
+      if (!win || win.closed) return false;
+      const safeTitle = escapeHtml(title || "原图下载");
+      const cards = items.map(item => {
+        const url = item.card?.generatedImageUrl;
+        const label = escapeHtml([item.card?.label, item.card?.title].filter(Boolean).join("｜") || "");
+        if (!url) {
+          return `<div class="card empty"><h2>第 ${item.index + 1} 页未生成图</h2></div>`;
+        }
+        const filename = escapeAttr(`${safeFileName(title)}-${item.index + 1}.png`);
+        return `<div class="card">
+  <h2>第 ${item.index + 1} 页 · ${label}</h2>
+  <img src="${escapeAttr(url)}" referrerpolicy="no-referrer" alt="第 ${item.index + 1} 页">
+  <div class="row">
+    <a href="${escapeAttr(url)}" target="_blank" rel="noopener" download="${filename}">在新标签打开</a>
+    <span class="muted">右键图片 → "图片另存为" → 保存为 <code>${filename}</code></span>
+  </div>
+</div>`;
+      }).join("");
+      const html = `<!doctype html><html lang="zh-CN"><head>
+<meta charset="utf-8">
+<title>${safeTitle} · 原图下载</title>
+<style>
+*{box-sizing:border-box;}
+body{font-family:system-ui,-apple-system,"PingFang SC",sans-serif;padding:20px;background:#f4f5f7;color:#1f2429;max-width:820px;margin:0 auto;}
+h1{font-size:20px;margin:0 0 8px;}
+.tip{background:#fff5e5;padding:14px 16px;border-radius:10px;color:#b35d00;margin:0 0 20px;line-height:1.55;}
+.tip strong{color:#222;}
+.card{background:#fff;padding:18px;margin:16px 0;border-radius:12px;box-shadow:0 4px 18px rgba(15,23,42,.05);}
+.card h2{font-size:14px;margin:0 0 12px;color:#4b5560;font-weight:600;}
+.card.empty{color:#94a0ad;text-align:center;padding:30px;}
+.card img{max-width:100%;display:block;border-radius:8px;}
+.row{display:flex;align-items:center;gap:14px;margin-top:12px;flex-wrap:wrap;}
+.row a{display:inline-block;padding:8px 14px;background:#1f6fa8;color:#fff;border-radius:6px;text-decoration:none;font-size:13px;}
+.row a:hover{background:#185988;}
+.muted{color:#6b7480;font-size:12px;}
+code{background:#eef0f3;padding:2px 6px;border-radius:4px;font-size:12px;}
+</style>
+</head><body>
+<h1>${safeTitle} · 原图下载</h1>
+<p class="tip">⚠️ 由于 image2.0 服务方近期换了图床且未对外开放跨域，浏览器无法自动批量保存。<br><strong>请在每张图上右键，选择"图片另存为"</strong>，按提示文件名保存即可。</p>
+${cards}
+</body></html>`;
+      try {
+        win.document.open();
+        win.document.write(html);
+        win.document.close();
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    async function exportSinglePagePng(index) {
       const card = state.deck.cards[index];
       const filename = `${safeFileName(state.deck.title)}-${index + 1}.png`;
-      // 优先：有 image2.0 成图就直接下原图，绕开 canvas/CORS
       if (card.generatedImageUrl) {
         try {
           const blob = await fetchImageBlob(card.generatedImageUrl);
           downloadBlob(blob, filename);
           return { ok: true, mode: "remote" };
         } catch (error) {
-          // 全部代理失败：新标签打开让用户右键另存
-          if (!options.silent) {
-            window.open(card.generatedImageUrl, "_blank", "noopener");
-          }
-          return { ok: false, mode: "opened-tab", error: error.message };
+          return { ok: false, mode: "need-manual", error: error.message };
         }
       }
-      // 没有成图：走 canvas 兜底（本地画的卡片，无 CORS 问题）
+      // 没生成图：走 canvas 兜底（本地画的卡片，无 CORS 问题）
       const canvas = await canvasForCard(card, index);
       const blob = await canvasToBlobAsync(canvas);
       downloadBlob(blob, filename);
@@ -3034,16 +3098,23 @@
 
     async function exportCurrentPng() {
       if (!state.deck) return showToast("请先生成文案");
+      // 关键：在同步代码里立即开窗口，保留用户激活，避免 popup blocker
+      const gallery = state.deck.cards[state.active]?.generatedImageUrl ? openGalleryWindow() : null;
       try {
         const result = await exportSinglePagePng(state.active);
         if (result.ok) {
+          if (gallery) try { gallery.close(); } catch {}
           showToast(`第 ${state.active + 1} 页 PNG 已${result.mode === "remote" ? "下载（原图）" : "导出"}`);
         } else {
-          const tip = `第 ${state.active + 1} 页直接下载失败，已在新标签打开成图，请右键"另存为"。原因：${result.error}`;
-          setStatus(tip);
-          showToast(tip);
+          if (gallery) {
+            fillGalleryWindow(gallery, state.deck.title, [{ index: state.active, card: state.deck.cards[state.active] }]);
+            showToast(`直接下载失败，已弹出原图窗口，请右键"图片另存为"`);
+          } else {
+            showToast("直接下载失败，且弹窗被拦截。请允许弹窗后重试，或在左侧预览面板右键图片另存");
+          }
         }
       } catch (error) {
+        if (gallery) try { gallery.close(); } catch {}
         const message = error?.message || "PNG 导出失败";
         setStatus(message);
         showToast(message);
@@ -3052,39 +3123,44 @@
 
     async function exportAllPng() {
       if (!state.deck) return { ok: 0, fail: 0, errors: [] };
-      showToast("正在导出全部 PNG");
+      // 关键：先开窗口（用户激活窗口期内），失败页待会儿往里写
+      const hasAnyRemote = state.deck.cards.some(card => card.generatedImageUrl);
+      const gallery = hasAnyRemote ? openGalleryWindow() : null;
+      showToast("正在导出全部 PNG，请稍候");
       let ok = 0;
       let fail = 0;
-      const openedTabs = [];
+      const failedItems = [];
       const errors = [];
       for (let index = 0; index < state.deck.cards.length; index += 1) {
         try {
-          const result = await exportSinglePagePng(index, { silent: true });
+          const result = await exportSinglePagePng(index);
           if (result.ok) {
             ok += 1;
           } else {
             fail += 1;
-            openedTabs.push(index + 1);
+            failedItems.push({ index, card: state.deck.cards[index] });
             errors.push(`第 ${index + 1} 页：${result.error}`);
           }
           await new Promise(resolve => setTimeout(resolve, 250));
         } catch (error) {
           fail += 1;
+          failedItems.push({ index, card: state.deck.cards[index] });
           errors.push(`第 ${index + 1} 页：${error?.message || "未知错误"}`);
         }
       }
-      if (fail && openedTabs.length) {
-        // 批量场景里，把失败页一次性新标签打开（避免循环里反复弹窗）
-        for (const page of openedTabs) {
-          const url = state.deck.cards[page - 1]?.generatedImageUrl;
-          if (url) window.open(url, "_blank", "noopener");
-        }
-      }
-      if (fail) {
-        const summary = `PNG 导出 ${ok}/${ok + fail} 成功${openedTabs.length ? `；失败的 ${openedTabs.length} 页已新标签打开，请右键另存` : `；${errors[0]}`}`;
+      if (fail && gallery) {
+        const filled = fillGalleryWindow(gallery, state.deck.title, failedItems);
+        const summary = filled
+          ? `PNG 自动下载 ${ok}/${ok + fail} 成功；剩 ${fail} 页已在新窗口列出，请右键"图片另存为"`
+          : `${fail} 页自动下载失败但新窗口写入失败：${errors[0]}`;
+        setStatus(summary);
+        showToast(summary);
+      } else if (fail) {
+        const summary = `${fail} 页失败，且浏览器拦截了弹窗。请允许 ${location.host} 弹窗后重试，或在预览面板右键图片另存`;
         setStatus(summary);
         showToast(summary);
       } else if (ok) {
+        if (gallery) try { gallery.close(); } catch {}
         showToast(`全部 ${ok} 页 PNG 已下载（原图）`);
       }
       return { ok, fail, errors };
@@ -3112,12 +3188,8 @@
       ].join("\n");
       downloadBlob(new Blob([publishText], { type: "text/plain;charset=utf-8" }), `${base}-发布文案.txt`);
       downloadBlob(new Blob([JSON.stringify(projectFromCurrent(currentProject() || {}), null, 2)], { type: "application/json;charset=utf-8" }), `${base}-项目备份.json`);
-      const result = await exportAllPng();
-      if (result.fail) {
-        const summary = `发布包：TXT/JSON 已下载，PNG ${result.ok}/${result.ok + result.fail} 页成功。失败页可右键页面里的成图直接保存。`;
-        setStatus(summary);
-        showToast(summary);
-      }
+      // exportAllPng 内部已处理 PNG 的成功/失败 toast 与弹窗兜底
+      await exportAllPng();
     }
 
     async function canvasForCard(card, index) {
