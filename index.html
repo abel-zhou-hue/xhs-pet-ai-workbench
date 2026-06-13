@@ -2966,8 +2966,7 @@
         try {
           canvas.toBlob(blob => {
             if (blob) return resolve(blob);
-            // canvas 被跨域图污染时 toBlob 抛 SecurityError；部分浏览器静默回 null
-            reject(new Error("图片导出失败：远端图片不支持跨域，浏览器无法导出 PNG。请右键页面里的成图直接保存。"));
+            reject(new Error("canvas toBlob 失败（可能 canvas 被跨域图污染）"));
           }, type);
         } catch (error) {
           reject(error);
@@ -2975,12 +2974,75 @@
       });
     }
 
+    // 多代理兜底下载远端图（绕开 APIMart 新 CDN 没 CORS 头的问题）
+    async function fetchImageBlob(url, timeoutMs = 12000) {
+      const attempts = [
+        url,                                                                         // 直连（万一 CDN 后续开了 CORS）
+        `https://corsproxy.io/?${encodeURIComponent(url)}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+        `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`
+      ];
+      const errors = [];
+      for (const attemptUrl of attempts) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          const response = await fetch(attemptUrl, { signal: controller.signal, credentials: "omit" });
+          clearTimeout(timer);
+          if (!response.ok) {
+            errors.push(`${new URL(attemptUrl).host} ${response.status}`);
+            continue;
+          }
+          const blob = await response.blob();
+          // 防御：代理失败时常常返回一个 HTML 错误页，size 很小且 content-type 不是 image
+          if (blob.size < 512 || (blob.type && !blob.type.startsWith("image/") && blob.type !== "application/octet-stream")) {
+            errors.push(`${new URL(attemptUrl).host} 返回非图片内容（${blob.type || "unknown"}, ${blob.size}B）`);
+            continue;
+          }
+          return blob;
+        } catch (error) {
+          clearTimeout(timer);
+          errors.push(`${new URL(attemptUrl).host} ${error?.name === "AbortError" ? "超时" : error?.message || "失败"}`);
+        }
+      }
+      throw new Error(`所有下载路径均失败：${errors.slice(0, 3).join("；")}`);
+    }
+
+    async function exportSinglePagePng(index, options = {}) {
+      const card = state.deck.cards[index];
+      const filename = `${safeFileName(state.deck.title)}-${index + 1}.png`;
+      // 优先：有 image2.0 成图就直接下原图，绕开 canvas/CORS
+      if (card.generatedImageUrl) {
+        try {
+          const blob = await fetchImageBlob(card.generatedImageUrl);
+          downloadBlob(blob, filename);
+          return { ok: true, mode: "remote" };
+        } catch (error) {
+          // 全部代理失败：新标签打开让用户右键另存
+          if (!options.silent) {
+            window.open(card.generatedImageUrl, "_blank", "noopener");
+          }
+          return { ok: false, mode: "opened-tab", error: error.message };
+        }
+      }
+      // 没有成图：走 canvas 兜底（本地画的卡片，无 CORS 问题）
+      const canvas = await canvasForCard(card, index);
+      const blob = await canvasToBlobAsync(canvas);
+      downloadBlob(blob, filename);
+      return { ok: true, mode: "canvas" };
+    }
+
     async function exportCurrentPng() {
       if (!state.deck) return showToast("请先生成文案");
       try {
-        const canvas = await canvasForCard(state.deck.cards[state.active], state.active);
-        const blob = await canvasToBlobAsync(canvas);
-        downloadBlob(blob, `${safeFileName(state.deck.title)}-${state.active + 1}.png`);
+        const result = await exportSinglePagePng(state.active);
+        if (result.ok) {
+          showToast(`第 ${state.active + 1} 页 PNG 已${result.mode === "remote" ? "下载（原图）" : "导出"}`);
+        } else {
+          const tip = `第 ${state.active + 1} 页直接下载失败，已在新标签打开成图，请右键"另存为"。原因：${result.error}`;
+          setStatus(tip);
+          showToast(tip);
+        }
       } catch (error) {
         const message = error?.message || "PNG 导出失败";
         setStatus(message);
@@ -2993,25 +3055,37 @@
       showToast("正在导出全部 PNG");
       let ok = 0;
       let fail = 0;
+      const openedTabs = [];
       const errors = [];
       for (let index = 0; index < state.deck.cards.length; index += 1) {
         try {
-          const canvas = await canvasForCard(state.deck.cards[index], index);
-          const blob = await canvasToBlobAsync(canvas);
-          downloadBlob(blob, `${safeFileName(state.deck.title)}-${index + 1}.png`);
-          ok += 1;
+          const result = await exportSinglePagePng(index, { silent: true });
+          if (result.ok) {
+            ok += 1;
+          } else {
+            fail += 1;
+            openedTabs.push(index + 1);
+            errors.push(`第 ${index + 1} 页：${result.error}`);
+          }
           await new Promise(resolve => setTimeout(resolve, 250));
         } catch (error) {
           fail += 1;
           errors.push(`第 ${index + 1} 页：${error?.message || "未知错误"}`);
         }
       }
+      if (fail && openedTabs.length) {
+        // 批量场景里，把失败页一次性新标签打开（避免循环里反复弹窗）
+        for (const page of openedTabs) {
+          const url = state.deck.cards[page - 1]?.generatedImageUrl;
+          if (url) window.open(url, "_blank", "noopener");
+        }
+      }
       if (fail) {
-        const summary = `PNG 导出 ${ok}/${ok + fail} 成功；${fail} 页失败：${errors[0]}`;
+        const summary = `PNG 导出 ${ok}/${ok + fail} 成功${openedTabs.length ? `；失败的 ${openedTabs.length} 页已新标签打开，请右键另存` : `；${errors[0]}`}`;
         setStatus(summary);
         showToast(summary);
       } else if (ok) {
-        showToast(`全部 ${ok} 页 PNG 已导出`);
+        showToast(`全部 ${ok} 页 PNG 已下载（原图）`);
       }
       return { ok, fail, errors };
     }
