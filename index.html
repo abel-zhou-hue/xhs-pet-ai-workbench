@@ -3167,6 +3167,15 @@
         ...state.deck.cards.map((card, index) => `${index + 1}. ${card.label || ""}｜${card.title || ""}`)
       ].join("\n");
       downloadBlob(new Blob([publishText], { type: "text/plain;charset=utf-8" }), `${base}-发布文案.txt`);
+      // 精简版：只含标题 + Caption + Hashtags，方便直接复制粘贴到小红书发布框
+      const xhsPostText = [
+        state.deck.title || "",
+        "",
+        state.deck.caption || "",
+        "",
+        (state.deck.hashtags || []).map(tag => String(tag).startsWith("#") ? tag : `#${tag}`).join(" ")
+      ].join("\n");
+      downloadBlob(new Blob([xhsPostText], { type: "text/plain;charset=utf-8" }), `${base}-小红书发布.txt`);
       downloadBlob(new Blob([JSON.stringify(projectFromCurrent(currentProject() || {}), null, 2)], { type: "application/json;charset=utf-8" }), `${base}-项目备份.json`);
       // exportAllPng 内部已处理 PNG 的成功/失败 toast 与弹窗兜底
       await exportAllPng();
